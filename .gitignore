@@ -1,0 +1,7 @@
+# Compiled build artifacts and temp directories
+/mods/*/dist/
+/temp/
+*.tmp
+*.zip
+PROJECT_CONTEXT.md
+Dumps/
