@@ -1,4 +1,4 @@
-# 🌫️ Fog of War Translucency Mod
+# 🌫️ Fog Mod (v1.0)
 
 Custom minimap rendering hook for Tinkerlands.
 
