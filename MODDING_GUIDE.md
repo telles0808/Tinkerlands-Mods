@@ -252,3 +252,115 @@ To maintain a consistent 60 FPS and cleanly hide radar elements during cutscenes
    }
    ```
 5. **Zero Disk I/O During Game Loop:** All lookups operate entirely in memory.
+
+---
+
+## 7. 🧱 HUD Draw Order & Final GUI Overlays
+
+Tinkerlands exposes more than one GUI drawing stage. Choosing the correct stage matters when a mod draws inside an area already occupied by the native HUD.
+
+### Regular `ModInstance` GUI Callback
+
+The fifth argument of `ModInstance.Create` registers the instance's regular GUI draw callback:
+
+```gml
+ModInstance.Create(
+    "Example",
+    "Example_Create",
+    "Example_Update",
+    undefined,
+    "Example_DrawGUI",
+    undefined
+);
+```
+
+This is appropriate for most mod interfaces. However, native GUI controllers can still draw afterward. An overlay positioned inside the minimap bounds may therefore execute correctly but remain hidden behind the minimap.
+
+### `OnModDrawGUIEnd` for Topmost Overlays
+
+Use `OnModDrawGUIEnd` when an element must appear after the complete native HUD:
+
+```gml
+OnModDrawGUIEnd(function()
+{
+    Example_DrawFinalOverlay();
+});
+```
+
+For this pattern, leave the regular GUI callback undefined to avoid drawing the element twice:
+
+```gml
+ModInstance.Create(
+    "Example",
+    "Example_Create",
+    "Example_Update",
+    undefined,
+    undefined,
+    undefined
+);
+```
+
+The final callback should still check normal HUD visibility conditions such as `objGUIIngameController`, `global.guiEnabled`, and active cutscenes. `OnModDrawGUIEnd` controls layer order; it does not automatically control when the overlay should be visible.
+
+---
+
+## 8. 🕒 Computer Time & Resolution-Independent Pixel Text
+
+The GameMaker runtime can read the computer's local clock directly. No file access, external process, DLL, or operating-system command is required:
+
+```gml
+function RealClock_Pad2(_value)
+{
+    _value = floor(_value);
+    return (_value < 10 ? "0" : "") + string(_value);
+}
+
+function RealClock_GetText()
+{
+    var _now = date_current_datetime();
+
+    return RealClock_Pad2(date_get_hour(_now))
+        + ":"
+        + RealClock_Pad2(date_get_minute(_now));
+}
+```
+
+`date_get_hour` returns the local hour suitable for 24-hour `HH:MM` formatting. Because minutes change infrequently, cache the formatted string and refresh it periodically instead of rebuilding it in every draw call.
+
+### Anchor from the Nearest Screen Edge
+
+For a reference rectangle at `x=1843`, `y=1`, `w=77`, `h=32` on a 1920×1080 display, its center is `(1881.5, 17)`. The center is only `38.5` pixels from the right edge. Preserve that edge distance rather than scaling the absolute X coordinate:
+
+```gml
+function RealClock_ScaleRatio()
+{
+    var _height = display_get_gui_height();
+    return (_height > 0) ? (_height / 1080.0) : 1.0;
+}
+
+var _ratio = RealClock_ScaleRatio();
+var _x = display_get_gui_width() - round(38.5 * _ratio);
+var _y = round(17 * _ratio);
+```
+
+This keeps the element attached to the top-right corner on 16:9, ultrawide, and other aspect ratios. Scaling `1843` directly would make the element drift whenever the screen width does not scale in the same proportion as its height.
+
+### Pixel Font Scale Is Separate from Position Scale
+
+The embedded HUD font is rendered at a small logical size. At text scale `1`, a five-character clock is approximately `25×8` pixels. To fill a `77×32` reference area at 1080p, use a base text multiplier of `3`, then apply the resolution ratio:
+
+```gml
+var _textScale = 3.0 * _ratio;
+
+GUI.DrawText(
+    _x,
+    _y,
+    "19:29",
+    5,
+    c_yellow,
+    1,
+    _textScale
+);
+```
+
+At 1080p this produces approximately `75×24` pixels, leaving a small safety margin inside the `77×32` area. Position offsets, container dimensions, and text size all use the same `height / 1080` ratio, while the font retains its own base multiplier.

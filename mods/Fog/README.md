@@ -12,5 +12,5 @@ Custom minimap rendering hook for Tinkerlands.
 2. Clear `%LOCALAPPDATA%\Tinkerlands\temp` if needed.
 3. Launch Tinkerlands!
 
-## 📦 Direct Download
+## 📦 Download
 - [⬇️ Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Fog.mod)

@@ -13,8 +13,9 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 
 | Mod | Description | Status | Download |
 | :--- | :--- | :---: | :---: |
-| **[NPC Radar (v1.3)](#-npc-radar)** | Real-time NPC tracker with HUD toggle button, custom portraits, and distance indicators. Zero FPS lag. | ✅ Stable | [⬇️ Direct Download Radar.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Radar.mod) |
-| **[Fog of War](#-translucent-fog-of-war)** | Modifies the minimap fog layer to provide 95% translucent visibility across explored areas. | ✅ Stable | [⬇️ Direct Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Fog.mod) |
+| **[NPC Radar (v1.3)](#-npc-radar)** | Real-time NPC tracker with HUD toggle button, custom portraits, and distance indicators. Zero FPS lag. | ✅ Stable | [⬇️ Download Radar.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Radar.mod) |
+| **[Fog of War](#-translucent-fog-of-war)** | Modifies the minimap fog layer to provide 95% translucent visibility across explored areas. | ✅ Stable | [⬇️ Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Fog.mod) |
+| **[RealClock (v1.0)](#-realclock-v10)** | Displays the computer's real local time in a responsive 24-hour HUD clock without requiring the Clock accessory. | ✅ Stable | [⬇️ Download RealClock.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/RealClock.mod) |
 
 ---
 
@@ -48,6 +49,14 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 * **Enhanced Exploration:** Adjusts the alpha channel on the minimap surface, rendering the explored map with 95% translucency.
 * **Seamless:** Hooks directly into `MINIMAP.render_surface` without interfering with game saves or world generation.
 * **Source:** [mods/Fog/src/Fog.gml](mods/Fog/src/Fog.gml)
+
+### 🕒 RealClock (v1.0)
+* **Real Local Time:** Displays the computer's current time in 24-hour `HH:MM` format instead of the in-game day cycle.
+* **No Accessory Required:** Remains available without equipping the Clock accessory.
+* **Native HUD Style:** Uses Tinkerlands' embedded pixel font with high-visibility yellow text.
+* **Responsive Placement:** Scales from a 1920×1080 reference area and stays anchored to the top-right corner at other resolutions.
+* **Correct Draw Layer:** Renders after the native GUI so the minimap cannot cover it.
+* **Source:** [mods/RealClock/src/RealClock.gml](mods/RealClock/src/RealClock.gml)
 
 ---
 
@@ -90,6 +99,9 @@ Before building the mods from source, ensure you have:
 
    # Compile Fog mod:
    .\tools\build.ps1 -ModName Fog
+
+   # Compile RealClock mod:
+   .\tools\build.ps1 -ModName RealClock
 
    # Compile and automatically deploy directly to your Steam Tinkerlands mods folder:
    .\tools\build.ps1 -ModName Radar -Deploy

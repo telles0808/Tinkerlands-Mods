@@ -13,5 +13,5 @@ High-performance NPC radar and tracking HUD for Tinkerlands.
 2. Clear `%LOCALAPPDATA%\Tinkerlands\temp` if upgrading from an older version.
 3. Launch Tinkerlands!
 
-## 📦 Direct Download
+## 📦 Download
 - [⬇️ Download Radar.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Radar.mod)

@@ -402,6 +402,249 @@ function Radar_DrawButton(_m)
     );
 }
 
+function Radar_GetPlayerName(_player)
+{
+    if(variable_instance_exists(_player, "playerName"))
+    {
+        var _player_name = variable_instance_get(_player, "playerName");
+
+        if(Radar_ValidName(_player_name))
+            return string(_player_name);
+    }
+
+    if(variable_instance_exists(_player, "name"))
+    {
+        var _name = variable_instance_get(_player, "name");
+
+        if(Radar_ValidName(_name))
+            return string(_name);
+    }
+
+    if(variable_instance_exists(_player, "username"))
+    {
+        var _username = variable_instance_get(_player, "username");
+
+        if(Radar_ValidName(_username))
+            return string(_username);
+    }
+
+    return "Player";
+}
+
+function Radar_DrawPlayers(
+    _w,
+    _h,
+    _s,
+    _margin,
+    _px,
+    _py,
+    _cam_x,
+    _cam_y
+)
+{
+    var _has_region = variable_instance_exists(MY_PLAYER, "netRegion");
+    var _region = _has_region
+        ? variable_instance_get(MY_PLAYER, "netRegion")
+        : undefined;
+
+    var _count = instance_number(objPlayer);
+
+    for(var i = 0; i < _count; i++)
+    {
+        var _player = instance_find(objPlayer, i);
+
+        if(_player == MY_PLAYER || !instance_exists(_player))
+            continue;
+
+        if(_has_region)
+        {
+            if(!variable_instance_exists(_player, "netRegion")
+            || variable_instance_get(_player, "netRegion") != _region)
+                continue;
+        }
+
+        Radar_DrawTarget(
+            _player.x,
+            _player.y,
+            Radar_GetPlayerName(_player),
+            -1,
+            _w,
+            _h,
+            _s,
+            _margin,
+            _px,
+            _py,
+            _cam_x,
+            _cam_y
+        );
+    }
+}
+
+function Radar_DrawTarget(
+    _x,
+    _y,
+    _name,
+    _sprite,
+    _w,
+    _h,
+    _s,
+    _margin,
+    _px,
+    _py,
+    _cam_x,
+    _cam_y
+)
+{
+    var _dx = _x - _px;
+    var _dy = _y - _py;
+
+    var _dist_tiles =
+        point_distance(
+            _px,
+            _py,
+            _x,
+            _y
+        )
+        / TILE_SIZE;
+
+    if(_dist_tiles <= 3)
+        return;
+
+    var _sx =
+        (_x - _cam_x)
+        * _s;
+
+    var _sy =
+        (_y - _cam_y)
+        * _s;
+
+    if(
+        _sx >= _margin
+        && _sx <= _w - _margin
+        && _sy >= _margin
+        && _sy <= _h - _margin
+    )
+    {
+        var _iy =
+            _sy
+            + 18 * _s;
+
+        if(_sprite != -1)
+        {
+            Draw.Sprite(
+                _sprite,
+                0,
+                _sx,
+                _iy,
+                0.42 * _s,
+                0.42 * _s,
+                0,
+                c_white,
+                1
+            );
+        }
+
+        GUI.DrawText(
+            _sx,
+            _iy + 10 * _s,
+            _name,
+            5,
+            c_white,
+            1,
+            _s * 0.55
+        );
+
+        return;
+    }
+
+    var _dir =
+        point_direction(
+            0,
+            0,
+            _dx,
+            _dy
+        );
+
+    var _rad =
+        degtorad(_dir);
+
+    var _vx =
+        cos(_rad);
+
+    var _vy =
+        -sin(_rad);
+
+    var _hw = _w * 0.5 - _margin;
+    var _hh = _h * 0.5 - _margin;
+
+    var _scale_x =
+        abs(_vx) > 0.0001
+        ? _hw / abs(_vx)
+        : 99999;
+
+    var _scale_y =
+        abs(_vy) > 0.0001
+        ? _hh / abs(_vy)
+        : 99999;
+
+    var _min_s =
+        min(
+            _scale_x,
+            _scale_y
+        );
+
+    var _ex =
+        _w * 0.5
+        + _vx * _min_s;
+
+    var _ey =
+        _h * 0.5
+        + _vy * _min_s;
+
+    Draw.Sprite(
+        sprGUIIngameArrowRight,
+        0,
+        _ex + _vx * 18 * _s,
+        _ey + _vy * 18 * _s,
+        0.8 * _s,
+        0.8 * _s,
+        _dir,
+        c_white,
+        1
+    );
+
+    if(_sprite != -1)
+    {
+        Draw.Sprite(
+            _sprite,
+            0,
+            _ex,
+            _ey,
+            0.45 * _s,
+            0.45 * _s,
+            0,
+            c_white,
+            1
+        );
+    }
+
+    var _label =
+        _name
+        + " ("
+        + string(round(_dist_tiles))
+        + "m)";
+
+    GUI.DrawText(
+        _ex,
+        _ey + 11 * _s,
+        _label,
+        5,
+        c_white,
+        1,
+        _s * 0.55
+    );
+}
+
 function Radar_Draw()
 {
     if(!Radar_HUDVisible())
@@ -427,12 +670,7 @@ function Radar_Draw()
     var _h = WINDOW.height;
     var _s = GUI_SCALE;
 
-    var _cx = _w * 0.5;
-    var _cy = _h * 0.5;
-
     var _margin = 44 * _s;
-    var _hw = _cx - _margin;
-    var _hh = _cy - _margin;
 
     var _px = MY_PLAYER.x;
     var _py = MY_PLAYER.y;
@@ -447,155 +685,30 @@ function Radar_Draw()
         if(_n.name == "")
             continue;
 
-        var _dx = _n.x - _px;
-        var _dy = _n.y - _py;
-
-        var _dist_tiles =
-            point_distance(
-                _px,
-                _py,
-                _n.x,
-                _n.y
-            )
-            / TILE_SIZE;
-
-        if(_dist_tiles <= 3)
-            continue;
-
-        var _sx =
-            (_n.x - _cam_x)
-            * _s;
-
-        var _sy =
-            (_n.y - _cam_y)
-            * _s;
-
-        if(
-            _sx >= _margin
-            && _sx <= _w - _margin
-            && _sy >= _margin
-            && _sy <= _h - _margin
-        )
-        {
-            var _iy =
-                _sy
-                + 18 * _s;
-
-            if(_n.sprite != -1)
-            {
-                Draw.Sprite(
-                    _n.sprite,
-                    0,
-                    _sx,
-                    _iy,
-                    0.42 * _s,
-                    0.42 * _s,
-                    0,
-                    c_white,
-                    1
-                );
-            }
-
-            GUI.DrawText(
-                _sx,
-                _iy + 10 * _s,
-                _n.name,
-                5,
-                c_white,
-                1,
-                _s * 0.55
-            );
-
-            continue;
-        }
-
-        var _dir =
-            point_direction(
-                0,
-                0,
-                _dx,
-                _dy
-            );
-
-        var _rad =
-            degtorad(_dir);
-
-        var _vx =
-            cos(_rad);
-
-        var _vy =
-            -sin(_rad);
-
-        var _scale_x =
-            abs(_vx) > 0.0001
-            ? _hw / abs(_vx)
-            : 99999;
-
-        var _scale_y =
-            abs(_vy) > 0.0001
-            ? _hh / abs(_vy)
-            : 99999;
-
-        var _min_s =
-            min(
-                _scale_x,
-                _scale_y
-            );
-
-        var _ex =
-            _cx
-            + _vx * _min_s;
-
-        var _ey =
-            _cy
-            + _vy * _min_s;
-
-        Draw.Sprite(
-            sprGUIIngameArrowRight,
-            0,
-            _ex + _vx * 18 * _s,
-            _ey + _vy * 18 * _s,
-            0.8 * _s,
-            0.8 * _s,
-            _dir,
-            c_white,
-            1
-        );
-
-        if(_n.sprite != -1)
-        {
-            Draw.Sprite(
-                _n.sprite,
-                0,
-                _ex,
-                _ey,
-                0.45 * _s,
-                0.45 * _s,
-                0,
-                c_white,
-                1
-            );
-        }
-
-        var _dist_int =
-            round(
-                _dist_tiles
-            );
-
-        var _label =
-            _n.name
-            + " ("
-            + string(_dist_int)
-            + "m)";
-
-        GUI.DrawText(
-            _ex,
-            _ey + 11 * _s,
-            _label,
-            5,
-            c_white,
-            1,
-            _s * 0.55
+        Radar_DrawTarget(
+            _n.x,
+            _n.y,
+            _n.name,
+            _n.sprite,
+            _w,
+            _h,
+            _s,
+            _margin,
+            _px,
+            _py,
+            _cam_x,
+            _cam_y
         );
     }
+
+    Radar_DrawPlayers(
+        _w,
+        _h,
+        _s,
+        _margin,
+        _px,
+        _py,
+        _cam_x,
+        _cam_y
+    );
 }

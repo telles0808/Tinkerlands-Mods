@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$ModName = "Radar",
     [switch]$Deploy = $false
 )
@@ -62,9 +62,38 @@ Remove-Item $exportDir -Recurse -Force
 Write-Host "Successfully compiled to $distDir\$ModName.mod and $releasesDir\$ModName.mod" -ForegroundColor Green
 
 if ($Deploy) {
-    $steamMods = "C:\Games\Steam\steamapps\common\Tinkerlands\mods"
-    if (Test-Path $steamMods) {
+    # 1. Check known Steam paths
+    $candidatePaths = @(
+        "C:\Games\Steam\steamapps\common\Tinkerlands\mods",
+        "C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods",
+        "C:\Program Files\Steam\steamapps\common\Tinkerlands\mods",
+        "D:\SteamLibrary\steamapps\common\Tinkerlands\mods",
+        "E:\SteamLibrary\steamapps\common\Tinkerlands\mods"
+    )
+
+    $steamMods = $null
+    foreach ($p in $candidatePaths) {
+        if (Test-Path $p) {
+            $steamMods = $p
+            break
+        }
+    }
+
+    # 2. Check Steam registry if still not found
+    if (!$steamMods) {
+        try {
+            $steamReg = Get-ItemProperty -Path "HKCU:\Software\Valve\Steam" -ErrorAction SilentlyContinue
+            if ($steamReg -and $steamReg.SteamPath) {
+                $regMods = Join-Path $steamReg.SteamPath "steamapps\common\Tinkerlands\mods"
+                if (Test-Path $regMods) { $steamMods = $regMods }
+            }
+        } catch {}
+    }
+
+    if ($steamMods -and (Test-Path $steamMods)) {
         Copy-Item "$distDir\$ModName.mod" "$steamMods\$($ModName.ToLower()).mod" -Force
         Write-Host "Deployed to $steamMods\$($ModName.ToLower()).mod" -ForegroundColor Yellow
+    } else {
+        Write-Host "Steam mods directory not found automatically. Please check candidate paths." -ForegroundColor DarkYellow
     }
 }
