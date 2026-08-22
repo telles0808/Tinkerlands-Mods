@@ -60,74 +60,36 @@ Mods are packaged as standard ZIP archives renamed to `<ModName>.mod`:
 The Apollo modding interface exposes lifecycle hooks:
 
 ```gml
-// Triggered when world generation begins
-OnWorldGenerationStart(function() {
-    // Initialization
-});
-
-// Triggered when world generation completes
-OnWorldGenerationEnd(function() {
+OnModLoad(function() {
+    // Fired when the mod is first initialized during game startup
     ModInstance.Create(
-        "Radar",
-        "Radar_Create",   // Create callback
-        "Radar_Update",   // Step/Update callback
-        undefined,        // Draw world callback
-        "Radar_Draw",     // Draw GUI callback
-        undefined         // Destroy callback
+        "MyMod",
+        "MyMod_Create",     // Create callback
+        "MyMod_Update",     // Step/Update callback
+        undefined,
+        "MyMod_DrawGUI",    // Standard GUI draw callback
+        "MyMod_Destroy"     // Cleanup callback
     );
 });
 
-// Triggered when the player travels to a new island
+OnWorldGenerationEnd(function() {
+    // Fired after world generation finishes or when loading into a world
+});
+
 OnIslandArrive(function() {
-    var _m = ModInstance.Get("Radar");
-    if (_m != undefined) {
-        _m.npcs = [];
-        _m.scan = true;
-    }
+    // Fired when the player arrives at an island
 });
 
-// Triggered when an NPC entity spawns into the world
 OnNPCSpawn(function(_npc) {
-    Radar_Add(_npc);
+    // Fired whenever an objNPC instance is spawned
 });
 ```
 
 ---
 
-## 3. 🌐 Engine Globals, Macros & Built-in APIs
+## 3. 🎭 NPC Architecture & $O(1)$ Portrait Resolution
 
-### Player & World
-* **`MY_PLAYER`**: Active player instance struct.
-  * `MY_PLAYER.x`, `MY_PLAYER.y`: World coordinates.
-  * `MY_PLAYER.hp`: Current hit points.
-* **`objPlayer`**: Player object index (`instance_exists(objPlayer)`).
-* **`TILE_SIZE`**: World grid tile size (in pixels).
-* **`CAMERA_X` / `CAMERA_Y`**: Active viewport top-left world coordinates.
-
-### GUI & Coordinate Systems
-* **`WINDOW.width` / `WINDOW.height`**: Current GUI viewport dimensions.
-* **`GUI_SCALE`**: Engine GUI scaling multiplier.
-* **`display_get_gui_width()` / `display_get_gui_height()`**: Raw display GUI dimensions.
-* **`device_mouse_x_to_gui(0)` / `device_mouse_y_to_gui(0)`**: Mouse cursor coordinates converted to GUI space.
-
-### Built-in Drawing APIs
-* **`Draw.Sprite(sprite, subimg, x, y, xscale, yscale, rot, color, alpha)`**: Native sprite rendering.
-* **`GUI.DrawText(x, y, string, font_id, color, alpha, scale)`**: Text rendering using embedded game fonts.
-
-### Responsive 1080p HUD Scaling Formula
-To ensure UI elements (such as HUD toggle buttons) remain proportionally positioned and sized across all monitor resolutions (720p, 1080p, 1440p, 4K):
-```gml
-function Radar_ScaleRatio() {
-    var _h = display_get_gui_height();
-    return (_h > 0) ? (_h / 1080.0) : 1.0;
-}
-```
-
----
-
-## 4. 🎭 NPC Anatomy & Portrait Resolution (Radar Mod)
-
-Through engine analysis, we discovered how Tinkerlands handles different NPC archetypes:
+A key architectural insight in Tinkerlands is how NPCs are represented in runtime:
 
 ```
                            ┌───────────────────────────────┐
@@ -136,37 +98,33 @@ Through engine analysis, we discovered how Tinkerlands handles different NPC arc
                                           │
                   ┌───────────────────────┴───────────────────────┐
                   ▼                                               ▼
-     [ Humanoid NPCs ]                               [ Unique / Monster NPCs ]
-  • Blacksmith, Guide, Miner,                      • Gizmo, Goggs, Gumns, Penguin,
-    Nurse, Carpenter, Chef, etc.                     Robot, Skeleton, Dryads, etc.
-  • Base Generic Sprites:                          • Dedicated Custom Sprites:
-    - sprBasePlayerIdle01/02/03                      - sprNPCGizmoIdle01
-    - sprBasePlayerHead01/02/03                      - sprNPCDryadIdle01
-  • Visuals composed via Equipment:                  - sprNPCBankerPenguinIdle01
-    - npc_blacksmith_helmet                          - sprNPCTownGhost
-    - npc_blacksmith_armor                         • Sprite name matches entity name
-  • Sprite name DOES NOT contain role!
+     [ Humanoid NPCs ]                               [ Unique / Special NPCs ]
+  • Blacksmith, Guide, Miner,                     • Gizmo, Goggs, Gumns, Penguin,
+    Nurse, Carpenter, etc.                          Robot, Dryads, Loonaru, etc.
+  • Generic Base Sprites:                         • Dedicated Unique Sprites:
+    - sprBasePlayerIdle01/02/03                     - sprNPCGizmoIdle01
+    - sprBasePlayerHead01/02/03                     - sprNPCDryadIdle01
+  • Visuals composed by Equipment                   - sprNPCBankerPenguinIdle01
+  • Sprite name does NOT contain role!            • Asset name contains role directly
 ```
 
-### The Native `npcID` Solution
-Each `objNPC` instance holds an internal numeric property: **`_npc.npcID`**.  
-Instead of parsing localized names or checking sprite name strings, querying `_npc.npcID` directly provides instant $O(1)$ portrait resolution that works across all languages:
+### The $O(1)$ `npcID` Resolution Pattern
+Instead of searching strings or localized names, use the native numeric `npcID` property on `objNPC` mapped to `db_npc`:
 
 ```gml
-function Radar_GetPortrait(_npc) {
+function GetNPCPortrait(_npc) {
     if (!variable_instance_exists(_npc, "npcID")) return -1;
     var _id = variable_instance_get(_npc, "npcID");
-    if (!is_numeric(_id)) return -1;
-
-    switch(_id) {
-        case 0:  return sprNPCPortraitGuide;
-        case 1:  return sprNPCPortraitBlacksmith;
-        case 3:  return sprNPCPortraitMerchant;
-        case 4:  return sprNPCPortraitWanderingMerchant;
-        case 5:  return sprNPCPortraitBard;
-        case 6:  return sprNPCPortraitWitch;
-        case 8:  return sprNPCPortraitMiner;
-        case 9:  return sprNPCPortraitFarmer;
+    
+    switch (_id) {
+        case 0: return sprNPCPortraitGuide;
+        case 1: return sprNPCPortraitBlacksmith;
+        case 3: return sprNPCPortraitMerchant;
+        case 4: return sprNPCPortraitWanderingMerchant;
+        case 5: return sprNPCPortraitBard;
+        case 6: return sprNPCPortraitWitch;
+        case 8: return sprNPCPortraitMiner;
+        case 9: return sprNPCPortraitFarmer;
         case 10: return sprNPCPortraitCarpenter;
         case 11: return sprNPCPortraitSkeleton;
         case 12: return sprNPCPortraitChef;
@@ -193,174 +151,162 @@ function Radar_GetPortrait(_npc) {
         case 36: return sprNPCPortraitLoonaru02;
         case 37: return sprNPCPortraitLoonaru03;
         case 38: return sprNPCPortraitLoonaru04;
-    }
-    return -1;
-}
-```
-
----
-
-## 5. 🌫️ Minimap Surface Hooking (Fog Mod)
-
-The game's minimap renders fog of war through `MINIMAP.render_surface`.  
-By hooking into this surface draw call, we can adjust the alpha transparency of the explored overlay without modifying world generation files or save states:
-
-```gml
-function FogAlpha_Install() {
-    if (variable_global_exists("MINIMAP") && !is_undefined(global.MINIMAP)) {
-        // Adjust alpha blending on the fog surface to achieve 95% translucency
-        // Retains discovered terrain and structures while keeping fog visual aesthetics
+        default: return -1;
     }
 }
 ```
 
 ---
 
-## 6. ⚡ Performance & Smart HUD / Cutscene Occlusion
+## 4. 🧭 HUD Occlusion & Cutscene Detection
 
-To maintain a consistent 60 FPS and cleanly hide radar elements during cutscenes, menus, and boss encounters:
-1. **Batch Coordinate Updates (15-Frame Interval):** Coordinate updates for off-screen NPCs run every 15 frames instead of every single step.
-2. **Identity Resolution Throttling:** Name and portrait resolution runs once upon spawn; unresolved entities retry up to 20 ticks before caching default values.
-3. **Cutscene Detection via Engine Callables:** Queries `cutscene_is_playing` and `cutscene_is_playing_except_player` dynamically:
-   ```gml
-   function Radar_CutsceneActive() {
-       var _m = ModInstance.Get("Radar");
-       if (_m == undefined) return false;
-       if (is_callable(_m.cutscenePlaying) && Radar_Call(_m.cutscenePlaying)) return true;
-       if (is_callable(_m.cutscenePlayingOther) && Radar_Call(_m.cutscenePlayingOther)) return true;
-       return false;
-   }
-   ```
-4. **Smart GUI Occlusion Detection:** Suppresses HUD drawing when full-screen menus, cutscenes, or dialogue windows are active:
-   ```gml
-   function Radar_HUDVisible() {
-       if (!instance_exists(objGUIIngameController)) return false;
-       if (Radar_CutsceneActive()) return false;
-       if (variable_global_exists("guiEnabled") && !global.guiEnabled) return false;
-       if (variable_global_exists("guiStatsEnabled") && !global.guiStatsEnabled) return false;
-       if (variable_global_exists("guiMapEnabled") && !global.guiMapEnabled) return false;
-       if (instance_exists(objGUIMapChartController)
-       || instance_exists(objGUIMenuController)
-       || instance_exists(objGUINPCController)
-       || instance_exists(objGUIShopController)
-       || instance_exists(objGUICraftingController)
-       || instance_exists(objGUICodexController)
-       || instance_exists(objGUICommunityController)
-       || instance_exists(objGUIShipNavigationController))
-           return false;
-       return true;
-   }
-   ```
-5. **Zero Disk I/O During Game Loop:** All lookups operate entirely in memory.
-
----
-
-## 7. 🧱 HUD Draw Order & Final GUI Overlays
-
-Tinkerlands exposes more than one GUI drawing stage. Choosing the correct stage matters when a mod draws inside an area already occupied by the native HUD.
-
-### Regular `ModInstance` GUI Callback
-
-The fifth argument of `ModInstance.Create` registers the instance's regular GUI draw callback:
+To cleanly hide mod HUD elements during cutscenes, full-screen menus, or dialogues:
 
 ```gml
-ModInstance.Create(
-    "Example",
-    "Example_Create",
-    "Example_Update",
-    undefined,
-    "Example_DrawGUI",
-    undefined
-);
-```
+function IsHUDVisible() {
+    if (!instance_exists(objGUIIngameController)) return false;
+    if (variable_global_exists("guiEnabled") && !global.guiEnabled) return false;
+    if (variable_global_exists("guiStatsEnabled") && !global.guiStatsEnabled) return false;
 
-This is appropriate for most mod interfaces. However, native GUI controllers can still draw afterward. An overlay positioned inside the minimap bounds may therefore execute correctly but remain hidden behind the minimap.
+    // Full-screen and menu controllers
+    if (instance_exists(objGUIMapChartController)
+        || instance_exists(objGUIMenuController)
+        || instance_exists(objGUINPCController)
+        || instance_exists(objGUIShopController)
+        || instance_exists(objGUICraftingController)
+        || instance_exists(objGUICodexController)
+        || instance_exists(objGUICommunityController)
+        || instance_exists(objGUIShipNavigationController)) {
+        return false;
+    }
 
-### `OnModDrawGUIEnd` for Topmost Overlays
+    // Active cutscenes
+    if (variable_global_exists("cutscene_is_playing")) {
+        var _fn = variable_global_get("cutscene_is_playing");
+        if (is_callable(_fn) && script_execute(_fn)) return false;
+    }
 
-Use `OnModDrawGUIEnd` when an element must appear after the complete native HUD:
-
-```gml
-OnModDrawGUIEnd(function()
-{
-    Example_DrawFinalOverlay();
-});
-```
-
-For this pattern, leave the regular GUI callback undefined to avoid drawing the element twice:
-
-```gml
-ModInstance.Create(
-    "Example",
-    "Example_Create",
-    "Example_Update",
-    undefined,
-    undefined,
-    undefined
-);
-```
-
-The final callback should still check normal HUD visibility conditions such as `objGUIIngameController`, `global.guiEnabled`, and active cutscenes. `OnModDrawGUIEnd` controls layer order; it does not automatically control when the overlay should be visible.
-
----
-
-## 8. 🕒 Computer Time & Resolution-Independent Pixel Text
-
-The GameMaker runtime can read the computer's local clock directly. No file access, external process, DLL, or operating-system command is required:
-
-```gml
-function RealClock_Pad2(_value)
-{
-    _value = floor(_value);
-    return (_value < 10 ? "0" : "") + string(_value);
+    return true;
 }
+```
 
-function RealClock_GetText()
-{
+---
+
+## 5. 🌫️ Minimap Fog Layer Hook
+
+To adjust minimap exploration fog translucency without affecting saved world data:
+
+```gml
+// Hook MINIMAP.render_surface alpha
+if (variable_global_exists("MINIMAP")) {
+    var _minimap = global.MINIMAP;
+    // Set 95% translucency on explored tiles
+}
+```
+
+---
+
+## 6. 🕒 Computer Time & Topmost Overlays (RealClock)
+
+The GameMaker runtime reads local machine time directly via native datetime functions:
+
+```gml
+function RealClock_GetText() {
     var _now = date_current_datetime();
-
-    return RealClock_Pad2(date_get_hour(_now))
-        + ":"
-        + RealClock_Pad2(date_get_minute(_now));
+    var _h = date_get_hour(_now);
+    var _m = date_get_minute(_now);
+    return (_h < 10 ? "0" : "") + string(_h) + ":" + (_m < 10 ? "0" : "") + string(_m);
 }
 ```
 
-`date_get_hour` returns the local hour suitable for 24-hour `HH:MM` formatting. Because minutes change infrequently, cache the formatted string and refresh it periodically instead of rebuilding it in every draw call.
+---
 
-### Anchor from the Nearest Screen Edge
+## 7. 🗄️ Container System & Item Transfer Operations (Better Organizer)
 
-For a reference rectangle at `x=1843`, `y=1`, `w=77`, `h=32` on a 1920×1080 display, its center is `(1881.5, 17)`. The center is only `38.5` pixels from the right edge. Preserve that edge distance rather than scaling the absolute X coordinate:
+Tinkerlands encapsulates its inventory and container mechanics within internal ds_maps and engine-managed data structures.
+
+### The `container_item_move` Pipeline
+Directly mutating item ds_map quantities (`_map[? 114] = ...`) without updating internal container grids causes synchronization failures and duplicate items. Always delegate item movement to the engine's native transfer pipeline:
 
 ```gml
-function RealClock_ScaleRatio()
-{
-    var _height = display_get_gui_height();
-    return (_height > 0) ? (_height / 1080.0) : 1.0;
+// Safely transfer an item map into a target container
+var _move_fn = variable_global_get("container_item_move");
+if (is_callable(_move_fn)) {
+    // container_item_move(item_map, target_container)
+    script_execute(_move_fn, _item_map, _destination_container);
 }
-
-var _ratio = RealClock_ScaleRatio();
-var _x = display_get_gui_width() - round(38.5 * _ratio);
-var _y = round(17 * _ratio);
 ```
 
-This keeps the element attached to the top-right corner on 16:9, ultrawide, and other aspect ratios. Scaling `1843` directly would make the element drift whenever the screen width does not scale in the same proportion as its height.
-
-### Pixel Font Scale Is Separate from Position Scale
-
-The embedded HUD font is rendered at a small logical size. At text scale `1`, a five-character clock is approximately `25×8` pixels. To fill a `77×32` reference area at 1080p, use a base text multiplier of `3`, then apply the resolution ratio:
+### Category Bitmask Filtering Table
+Items expose their type category string at key index `7` in their respective `ds_map`:
 
 ```gml
-var _textScale = 3.0 * _ratio;
+function ItemCategoryBit(_item) {
+    if (!is_numeric(_item) || !ds_exists(_item, ds_type_map) || !ds_map_exists(_item, 7))
+        return 0;
 
-GUI.DrawText(
-    _x,
-    _y,
-    "19:29",
-    5,
-    c_yellow,
-    1,
-    _textScale
-);
+    switch (string(_item[? 7])) {
+        case "Etc":
+        case "Ingredient":
+        case "Spice":
+        case "Fish":
+            return 1;   // Materials & Resources
+
+        case "Building":
+        case "Floor":
+        case "Storage":
+        case "Crafting Table":
+        case "Cable":
+            return 2;   // Building & Construction
+
+        case "Usable":
+            return 4;   // Consumables & Potions
+
+        case "Weapon":
+        case "Tool":
+        case "Accesory":
+        case "Accessory":
+        case "Head":
+        case "Body":
+        case "Legs":
+        case "Hook":
+        case "Fishing Rod":
+        case "Pet":
+            return 8;   // Equipment & Gear
+
+        case "Ammo":
+        case "Throwable":
+            return 16;  // Ammunition & Projectiles
+
+        case "Currency":
+        case "Map":
+        case "Recipe":
+        case "Summon":
+            return 32;  // Valuables & Progression
+    }
+    return 0;
+}
 ```
 
-At 1080p this produces approximately `75×24` pixels, leaving a small safety margin inside the `77×32` area. Position offsets, container dimensions, and text size all use the same `height / 1080` ratio, while the font retains its own base multiplier.
+### Physical Coordinate Persistence
+Because dynamic container IDs (`ref ds_map ...`) change upon world reload, persistent container configurations must be keyed by physical spatial coordinates (`chest_x[X]_y[Y]`):
+
+```gml
+function GetChestSection(_container) {
+    if (instance_exists(objInteractableChest)) {
+        var _count = instance_number(objInteractableChest);
+        for (var i = 0; i < _count; i++) {
+            var _chest = instance_find(objInteractableChest, i);
+            if (_chest != undefined && instance_exists(_chest)
+                && variable_instance_exists(_chest, "container")
+                && variable_instance_get(_chest, "container") == _container) {
+                return "chest_x" + string(round(_chest.x)) + "_y" + string(round(_chest.y));
+            }
+        }
+    }
+    return "";
+}
+```
+
+> [!WARNING]
+> **GameMaker YYC Gotcha:** Never use `return` inside a `with(...)` block to return values from a function. In GameMaker, `return` inside `with` can behave like `break` or produce undefined behavior. Always use indexed `instance_find` iteration when returning results.

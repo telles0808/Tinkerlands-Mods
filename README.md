@@ -13,6 +13,7 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 
 | Mod | Description | Status | Download |
 | :--- | :--- | :---: | :---: |
+| **[Better Organizer (v1.0)](#-better-organizer-bo-v10)** | Smart inventory deposit system with interactive 7-channel chest filter bars, category routing, and hotbar protection. | ✅ Stable | [⬇️ Download BO.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/BO.mod) |
 | **[NPC Radar (v1.3)](#-npc-radar-v13)** | Real-time NPC tracker with HUD toggle button, custom portraits, and distance indicators. Zero FPS lag. | ✅ Stable | [⬇️ Download Radar.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Radar.mod) |
 | **[Fog (v1.0)](#-fog-v10)** | Modifies the minimap fog layer to provide 95% translucent visibility across explored areas. | ✅ Stable | [⬇️ Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Fog.mod) |
 | **[RealClock (v1.0)](#-realclock-v10)** | Displays the computer's real local time in a responsive 24-hour HUD clock without requiring the Clock accessory. | ✅ Stable | [⬇️ Download RealClock.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/RealClock.mod) |
@@ -21,7 +22,7 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 
 ## 📥 Installation
 
-1. Download the `.mod` file for the desired mod from the [Releases](releases/) folder (or individual mod `dist/` folders).
+1. Download the `.mod` file for the desired mod from the [Releases](releases/) folder (or direct links above).
 2. Locate your **Tinkerlands** installation folder:
    ```
    C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods\
@@ -37,6 +38,21 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 
 ## 🛠️ Mod Details
 
+### 📦 Better Organizer / BO (v1.0)
+* **Interactive 7-Category Filter Bar:** Pinned seamlessly onto the top frame of any opened chest (standard or astral).
+* **Two-Tier Priority Routing:** Fills existing incomplete piles first before claiming new chest slots.
+* **Hotbar Action Row Guard:** Row 0 (active inventory action slots) is never touched during automatic deposits.
+* **Native Engine Transfer:** Integrates directly with `container_item_move` for instant, duplicate-free transfers.
+* **Physical Position Persistence:** Filter settings are keyed by real world-coordinates (`chest_x[X]_y[Y]`) and automatically saved in `BO_filters.cfg`.
+* **Dedicated HUD Button:** Adds a custom `BO` button right next to the native inventory quick-stack controls.
+* **Preview:**
+
+  ![Better Organizer Preview](mods/BO/preview.png)
+
+* **Documentation & Source:** [mods/BO/README.md](mods/BO/README.md) • [mods/BO/src/BO.gml](mods/BO/src/BO.gml)
+
+---
+
 ### 📡 NPC Radar (v1.3)
 * **Dynamic Off-Screen Tracking:** Shows directional arrows with character portraits pointing to all NPCs on the island.
 * **In-Screen Identification:** Displays NPC portraits and names directly above entities within your field of view.
@@ -45,24 +61,32 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 * **Ultra-Smooth 60 FPS:** Uses batch coordinate updating and identity resolution throttling for zero stutters.
 * **Source:** [mods/Radar/src/Radar.gml](mods/Radar/src/Radar.gml)
 
-### 🌫️ Fog (v1.0)
-* **Enhanced Exploration:** Adjusts the alpha channel on the minimap surface, rendering the explored map with 95% translucency.
-* **Seamless:** Hooks directly into `MINIMAP.render_surface` without interfering with game saves or world generation.
-* **Source:** [mods/Fog/src/Fog.gml](mods/Fog/src/Fog.gml)
+---
 
 ### 🕒 RealClock (v1.0)
 * **Real Local Time:** Displays the computer's current time in 24-hour `HH:MM` format instead of the in-game day cycle.
 * **No Accessory Required:** Remains available without equipping the Clock accessory.
 * **Native HUD Style:** Uses Tinkerlands' embedded pixel font with high-visibility yellow text.
-* **Responsive Placement:** Scales from a 1920×1080 reference area and stays anchored to the top-right corner at other resolutions.
-* **Correct Draw Layer:** Renders after the native GUI so the minimap cannot cover it.
-* **Source:** [mods/RealClock/src/RealClock.gml](mods/RealClock/src/RealClock.gml)
+* **Responsive Placement:** Scales from a 1920×1080 reference area and stays anchored to the top-right corner across all resolutions.
+* **Topmost Draw Layer:** Renders on top of the native GUI so the minimap cannot cover it.
+* **Preview:**
+
+  ![RealClock Preview](mods/RealClock/preview.png)
+
+* **Documentation & Source:** [mods/RealClock/README.md](mods/RealClock/README.md) • [mods/RealClock/src/RealClock.gml](mods/RealClock/src/RealClock.gml)
+
+---
+
+### 🌫️ Fog (v1.0)
+* **Enhanced Exploration:** Adjusts the alpha channel on the minimap surface, rendering the explored map with 95% translucency.
+* **Seamless:** Hooks directly into `MINIMAP.render_surface` without interfering with game saves or world generation.
+* **Source:** [mods/Fog/src/Fog.gml](mods/Fog/src/Fog.gml)
 
 ---
 
 ## 📖 Technical Documentation
 For developers and modders looking to understand Tinkerlands' engine variables, lifecycle hooks, and NPC architecture:
-* 📄 **[Tinkerlands Modding & Engine Reference Guide](MODDING_GUIDE.md):** Detailed guide on GML mod packaging, global variables, lifecycle events, $O(1)$ `npcID` resolution, and minimap rendering hooks.
+* 📄 **[Tinkerlands Modding & Engine Reference Guide](MODDING_GUIDE.md):** Detailed guide on GML mod packaging, global variables, lifecycle events, $O(1)$ `npcID` resolution, container hooks, and minimap rendering.
 
 ---
 
@@ -94,6 +118,9 @@ Before building the mods from source, ensure you have:
 
 3. **Compile the Mods:**
    ```powershell
+   # Compile Better Organizer (BO) mod:
+   .\tools\build.ps1 -ModName BO
+
    # Compile Radar mod:
    .\tools\build.ps1 -ModName Radar
 
@@ -104,7 +131,7 @@ Before building the mods from source, ensure you have:
    .\tools\build.ps1 -ModName RealClock
 
    # Compile and automatically deploy directly to your Steam Tinkerlands mods folder:
-   .\tools\build.ps1 -ModName Radar -Deploy
+   .\tools\build.ps1 -ModName BO -Deploy
    ```
 
 The compiled mod packages will be output to both `mods/<ModName>/dist/<ModName>.mod` and `releases/<ModName>.mod`.

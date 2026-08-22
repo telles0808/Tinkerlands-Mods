@@ -1,0 +1,1599 @@
+/*
+    ========================================================================
+    TINKERLANDS - B.O.
+    Better Organizer
+
+    In-Memory & Persisted Chest Filter Bar
+    ========================================================================
+*/
+
+OnModLoad(function()
+{
+    BO_LogImmediate("");
+    BO_LogImmediate("========================================");
+    BO_LogImmediate("[BO] Better Organizer TRACE");
+
+    ModInstance.Create(
+        "BO",
+        "BO_Create",
+        "BO_Update",
+        undefined,
+        "BO_DrawGUI",
+        undefined
+    );
+});
+
+
+OnWorldGenerationEnd(function()
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo != undefined)
+    {
+        _bo.world_ready = true;
+        _bo.busy = false;
+        _bo.inventory_visible_last = false;
+        _bo.inventory_opened_at = 0;
+        _bo.button_ready = false;
+        _bo.feedback_active = false;
+        _bo.feedback_started_at = 0;
+        _bo.chest_filters = [];
+        _bo.loaded_filter_containers = [];
+        _bo.persisted_filters = BO_LoadPersistedFilters();
+        _bo.open_chest_container = undefined;
+        _bo.open_chest_changed_at = 0;
+        _bo.filter_feedback_index = -1;
+        _bo.filter_feedback_started_at = 0;
+        _bo.hovered_filter_index = -1;
+        BO_LogImmediate("[BO] World ready. Loaded persisted filters: " + string(array_length(_bo.persisted_filters)));
+    }
+});
+
+
+// ============================================================================
+// STATE
+// ============================================================================
+
+function BO_Create()
+{
+    world_ready = false;
+    busy = false;
+    inventory_visible_last = false;
+    inventory_opened_at = 0;
+    button_ready = false;
+    feedback_active = false;
+    feedback_started_at = 0;
+    chest_filters = [];
+    loaded_filter_containers = [];
+    persisted_filters = BO_LoadPersistedFilters();
+    open_chest_container = undefined;
+    open_chest_changed_at = 0;
+    filter_feedback_index = -1;
+    filter_feedback_started_at = 0;
+    hovered_filter_index = -1;
+}
+
+
+function BO_Update()
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo == undefined)
+        return;
+
+    var _visible = BO_InventoryVisible();
+
+    if(!_visible)
+    {
+        _bo.inventory_visible_last = false;
+        _bo.inventory_opened_at = 0;
+        _bo.button_ready = false;
+        _bo.feedback_active = false;
+        _bo.open_chest_container = undefined;
+        _bo.filter_feedback_index = -1;
+        _bo.hovered_filter_index = -1;
+
+        return;
+    }
+
+    if(!_bo.inventory_visible_last)
+    {
+        _bo.inventory_visible_last = true;
+        _bo.inventory_opened_at = get_timer();
+        _bo.button_ready = false;
+        _bo.feedback_active = false;
+    }
+
+    BO_UpdateOpenChest(_bo);
+    BO_PreloadNearbyFilters();
+
+    if(BO_FilterButtonInput(_bo))
+        return;
+
+    if(!_bo.button_ready)
+    {
+        if(get_timer() - _bo.inventory_opened_at < 300000)
+            return;
+
+        _bo.button_ready = true;
+    }
+
+    if(_bo.busy)
+        return;
+
+    var _button = BO_ButtonGeometry();
+    var _mx = device_mouse_x_to_gui(0);
+    var _my = device_mouse_y_to_gui(0);
+    var _half = _button.hit_size * 0.5;
+
+    if(
+        _mx >= _button.x - _half
+        && _mx <= _button.x + _half
+        && _my >= _button.y - _half
+        && _my <= _button.y + _half
+        && mouse_check_button_pressed(mb_left)
+    )
+    {
+        _bo.feedback_active = true;
+        _bo.feedback_started_at = get_timer();
+        BO_RunRepeatedDeposit();
+    }
+}
+
+
+// ============================================================================
+// INVENTORY VISIBILITY
+// ============================================================================
+
+function BO_InventoryVisible()
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo == undefined || !_bo.world_ready)
+        return false;
+
+    if(!Container.Exists(INVENTORY))
+        return false;
+
+    if(!variable_global_exists("container_get_open"))
+        return false;
+
+    var _get_open = variable_global_get("container_get_open");
+
+    if(!is_callable(_get_open))
+        return false;
+
+    var _args = [INVENTORY];
+
+    if(is_method(_get_open))
+        return method_call(_get_open, _args);
+
+    return script_execute_ext(_get_open, _args);
+}
+
+
+// ============================================================================
+// B.O. BUTTON
+// ============================================================================
+
+function BO_DrawGUI()
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(
+        _bo == undefined
+        || !BO_InventoryVisible()
+    )
+    {
+        return;
+    }
+
+    if(_bo.button_ready)
+        BO_DrawMainButton(_bo);
+
+    BO_DrawChestFilters(_bo);
+}
+
+
+function BO_DrawMainButton(_bo)
+{
+    var _button = BO_ButtonGeometry();
+    var _icon = sprGUIIngameInventoryIconQuickChest;
+    var _icon_scale = GUI_SCALE;
+    var _visual_y = _button.y;
+    var _press = 0;
+
+    if(_bo.feedback_active)
+    {
+        var _feedback_elapsed = get_timer() - _bo.feedback_started_at;
+
+        if(_feedback_elapsed >= 200000)
+        {
+            _bo.feedback_active = false;
+        }
+        else
+        {
+            var _phase = _feedback_elapsed / 200000.0;
+
+            if(_phase < 0.5)
+                _press = _phase * 2;
+            else
+                _press = (1 - _phase) * 2;
+
+            _visual_y += 2.5 * GUI_SCALE * _press;
+            _icon_scale *= 1 - 0.08 * _press;
+        }
+    }
+
+    var _icon_offset_x =
+        (
+            sprite_get_xoffset(_icon)
+            - sprite_get_width(_icon) * 0.5
+        )
+        * _icon_scale;
+
+    var _icon_offset_y =
+        (
+            sprite_get_yoffset(_icon)
+            - sprite_get_height(_icon) * 0.5
+        )
+        * _icon_scale;
+
+    Draw.Sprite(
+        _icon,
+        0,
+        _button.x + _icon_offset_x,
+        _visual_y + _icon_offset_y,
+        _icon_scale,
+        _icon_scale,
+        0,
+        c_white,
+        1
+    );
+
+    GUI.DrawText(
+        _button.x,
+        _visual_y - 8.5 * _icon_scale,
+        "BO",
+        5,
+        c_yellow,
+        1,
+        0.52 * _icon_scale
+    );
+}
+
+
+function BO_ButtonGeometry()
+{
+    return {
+        x: display_get_gui_width() * 0.5 - 50.6667 * GUI_SCALE,
+        y: display_get_gui_height() - 10 * GUI_SCALE,
+        hit_size: 28 * GUI_SCALE
+    };
+}
+
+
+// ============================================================================
+// OPEN CHEST / FILTER BAR
+// ============================================================================
+
+function BO_UpdateOpenChest(_bo)
+{
+    var _open = BO_GetOpenNearbyChestContainer(_bo);
+
+    if(_open != _bo.open_chest_container)
+    {
+        BO_LogImmediate(
+            "[BO][OPEN-CHEST] previous="
+            + string(_bo.open_chest_container)
+            + " current="
+            + string(_open)
+        );
+
+        _bo.open_chest_container = _open;
+        _bo.open_chest_changed_at = get_timer();
+        _bo.filter_feedback_index = -1;
+        _bo.hovered_filter_index = -1;
+
+        if(!is_undefined(_open))
+        {
+            BO_EnsureChestFilterLoaded(_open);
+        }
+    }
+}
+
+
+function BO_GetOpenNearbyChestContainer(_bo)
+{
+    var _get_open = BO_GetCallable("container_get_open");
+
+    if(is_undefined(_get_open))
+        return undefined;
+
+    var _nearby = BO_GetNearbyContainers();
+
+    for(var i = 0; i < array_length(_nearby); i++)
+    {
+        var _container = _nearby[i];
+
+        if(
+            Container.Exists(_container)
+            && BO_Call1(_get_open, _container)
+        )
+        {
+            return _container;
+        }
+    }
+
+    return undefined;
+}
+
+
+function BO_FilterButtonGeometry(_index)
+{
+    var _scale_x = display_get_gui_width() / 1920.0;
+    var _scale_y = display_get_gui_height() / 1080.0;
+    var _scale = min(_scale_x, _scale_y);
+    var _left = 127 * _scale_x;
+    var _spacing = 34 * _scale_x;
+
+    return {
+        x: _left + (17 + _index * 34) * _scale_x,
+        bottom: 587 * _scale_y,
+        hit_size: 40 * _scale,
+        visual_size: 30 * _scale,
+        spacing: _spacing
+    };
+}
+
+
+function BO_FilterIcon(_index)
+{
+    switch(_index)
+    {
+        case 0: return sprItemWood;
+        case 1: return sprItemWood;
+        case 2: return sprItemWallStone;
+        case 3: return sprPotionHP;
+        case 4: return sprItemWoodenShield;
+        case 5: return sprItemArrowWood;
+        case 6: return sprItemCoinGold;
+    }
+
+    return sprGUIIngameInventoryIconQuickChest;
+}
+
+
+function BO_FilterBit(_index)
+{
+    switch(_index)
+    {
+        case 1: return 1;
+        case 2: return 2;
+        case 3: return 4;
+        case 4: return 8;
+        case 5: return 16;
+        case 6: return 32;
+    }
+
+    return 0;
+}
+
+
+function BO_FilterButtonActive(_container, _index)
+{
+    var _filter = BO_GetChestFilter(_container);
+
+    if(is_undefined(_filter))
+        return false;
+
+    if(_index == 0)
+        return _filter.existing_only;
+
+    var _bit = BO_FilterBit(_index);
+
+    return (_filter.category_mask & _bit) != 0;
+}
+
+
+function BO_FilterButtonInput(_bo)
+{
+    if(
+        is_undefined(_bo.open_chest_container)
+        || !Container.Exists(_bo.open_chest_container)
+    )
+    {
+        _bo.hovered_filter_index = -1;
+        return false;
+    }
+
+    var _hovered = BO_HoveredFilterIndex();
+
+    if(_hovered >= 0)
+    {
+        _bo.hovered_filter_index = _hovered;
+        Input.DisableMenuInputs(0.1);
+
+        if(mouse_check_button_pressed(mb_left))
+        {
+            BO_ToggleChestFilter(
+                _bo.open_chest_container,
+                _hovered
+            );
+            _bo.filter_feedback_index = _hovered;
+            _bo.filter_feedback_started_at = get_timer();
+            mouse_clear(mb_left);
+
+            BO_LogImmediate(
+                "[BO][FILTER] button="
+                + string(_hovered)
+                + " open_container="
+                + string(_bo.open_chest_container)
+                + " state={"
+                + BO_FilterTrace(_bo.open_chest_container)
+                + "} "
+                + BO_ContainerPhysicalTrace(
+                    _bo.open_chest_container
+                )
+            );
+        }
+
+        return true;
+    }
+
+    _bo.hovered_filter_index = -1;
+    return false;
+}
+
+
+function BO_HoveredFilterIndex()
+{
+    var _mx = device_mouse_x_to_gui(0);
+    var _my = device_mouse_y_to_gui(0);
+    var _scale_y = display_get_gui_height() / 1080.0;
+    var _scale = (_scale_y > 0) ? _scale_y : 1.0;
+
+    for(var i = 0; i < 7; i++)
+    {
+        var _button = BO_FilterButtonGeometry(i);
+        var _half_w = max(18 * _scale, _button.hit_size * 0.5);
+        var _y_top = _button.bottom - 46 * _scale;
+        var _y_bottom = _button.bottom + 8 * _scale;
+
+        if(
+            _mx >= _button.x - _half_w
+            && _mx <= _button.x + _half_w
+            && _my >= _y_top
+            && _my <= _y_bottom
+        )
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+
+function BO_DrawChestFilters(_bo)
+{
+    if(
+        is_undefined(_bo.open_chest_container)
+        || !Container.Exists(_bo.open_chest_container)
+    )
+    {
+        return;
+    }
+
+    var _feedback_elapsed = get_timer() - _bo.filter_feedback_started_at;
+
+    if(
+        _bo.filter_feedback_index >= 0
+        && _feedback_elapsed >= 200000
+    )
+    {
+        _bo.filter_feedback_index = -1;
+    }
+
+    for(var i = 0; i < 7; i++)
+    {
+        var _button = BO_FilterButtonGeometry(i);
+        var _icon = BO_FilterIcon(i);
+        var _size = _button.visual_size;
+        var _rotation = (i == 5) ? -45 : 0;
+        var _reference_scale = _button.visual_size / 34.0;
+        var _press = 0;
+
+        if(_bo.filter_feedback_index == i)
+        {
+            var _phase = _feedback_elapsed / 200000.0;
+
+            if(_phase < 0.5)
+                _press = _phase * 2;
+            else
+                _press = (1 - _phase) * 2;
+
+            _size *= 1 - 0.08 * _press;
+        }
+
+        if(i == 0)
+            _size *= 0.79;
+
+        var _icon_scale =
+            _size
+            / max(
+                sprite_get_width(_icon),
+                sprite_get_height(_icon)
+            );
+
+        var _center_y =
+            _button.bottom
+            - _size * 0.5
+            + 2.5 * _reference_scale * _press;
+
+        var _offset_x =
+            (
+                sprite_get_xoffset(_icon)
+                - sprite_get_width(_icon) * 0.5
+            )
+            * _icon_scale;
+
+        var _offset_y =
+            (
+                sprite_get_yoffset(_icon)
+                - sprite_get_height(_icon) * 0.5
+            )
+            * _icon_scale;
+
+        var _active = BO_FilterButtonActive(
+            _bo.open_chest_container,
+            i
+        );
+
+        var _draw_x = _button.x;
+
+        if(i == 0)
+            _draw_x -= 5 * _reference_scale;
+
+        Draw.Sprite(
+            _icon,
+            0,
+            _draw_x + _offset_x,
+            _center_y + _offset_y,
+            _icon_scale,
+            _icon_scale,
+            _rotation,
+            _active ? c_white : c_gray,
+            _active ? 1 : 0.55
+        );
+
+        if(i == 0)
+        {
+            Draw.Sprite(
+                _icon,
+                0,
+                _draw_x + 10 * _reference_scale + _offset_x,
+                _center_y + _offset_y,
+                _icon_scale,
+                _icon_scale,
+                0,
+                _active ? c_white : c_gray,
+                _active ? 1 : 0.55
+            );
+        }
+    }
+}
+
+
+// ============================================================================
+// FILTERED DEPOSIT CORE
+// ============================================================================
+
+function BO_RunRepeatedDeposit()
+{
+    var _bo = ModInstance.Get("BO");
+
+    BO_LogImmediate("");
+    BO_LogImmediate("[BO][RUN] ===== B.O. click trace begin =====");
+
+    if(
+        _bo == undefined
+        || !_bo.world_ready
+        || _bo.busy
+    )
+    {
+        BO_LogImmediate("[BO][RUN] cancelled: state unavailable or busy");
+        return;
+    }
+
+    if(!Container.Exists(INVENTORY))
+    {
+        BO_LogImmediate("[BO][RUN] cancelled: INVENTORY unavailable");
+        return;
+    }
+
+    var _contains = BO_GetCallable("container_contains_item");
+    var _move_item = BO_GetCallable("container_item_move");
+
+    if(is_undefined(_contains) || is_undefined(_move_item))
+    {
+        BO_LogImmediate(
+            "[BO][RUN] cancelled: contains="
+            + string(!is_undefined(_contains))
+            + " move_item="
+            + string(!is_undefined(_move_item))
+        );
+        return;
+    }
+
+    _bo.busy = true;
+
+    var _all_nearby = BO_GetNearbyContainersByDistance();
+    var _nearby = [];
+
+    for(var candidate_index = 0; candidate_index < array_length(_all_nearby); candidate_index++)
+    {
+        var _candidate = _all_nearby[candidate_index];
+
+        if(!is_undefined(BO_GetChestFilter(_candidate)))
+        {
+            array_push(_nearby, _candidate);
+        }
+        else
+        {
+            BO_LogImmediate(
+                "[BO][NEARBY-EXCLUDED] container="
+                + string(_candidate)
+                + " reason=no active filter "
+                + BO_ContainerPhysicalTrace(_candidate)
+            );
+        }
+    }
+
+    if(array_length(_nearby) == 0)
+    {
+        _bo.busy = false;
+        BO_LogImmediate("[BO][RUN] cancelled: no filtered nearby chest");
+        return;
+    }
+
+    var _items = BO_SnapshotMovableInventoryCells();
+
+    BO_LogImmediate(
+        "[BO][RUN] filtered_nearby="
+        + string(array_length(_nearby))
+        + " inventory_sources="
+        + string(array_length(_items))
+    );
+
+    for(var i = 0; i < array_length(_items); i++)
+    {
+        var _source = _items[i];
+        var _item = Container.GetItem(INVENTORY, _source.x, _source.y);
+
+        if(is_undefined(_item) || !BO_ItemIsMovable(_item))
+            continue;
+
+        var _item_id = BO_ItemID(_item);
+
+        if(is_undefined(_item_id))
+            continue;
+
+        // Priority 0: Chests that already contain this item (existing piles first)
+        // Priority 1: Other compatible filtered chests
+        for(var _priority = 0; _priority <= 1; _priority++)
+        {
+            for(var c = 0; c < array_length(_nearby); c++)
+            {
+                var _destination = _nearby[c];
+
+                if(!Container.Exists(_destination))
+                    continue;
+
+                var _current = Container.GetItem(
+                    INVENTORY,
+                    _source.x,
+                    _source.y
+                );
+
+                if(
+                    is_undefined(_current)
+                    || BO_ItemID(_current) != _item_id
+                )
+                {
+                    break;
+                }
+
+                if(
+                    BO_DestinationPriority(
+                        _destination,
+                        _current,
+                        _contains
+                    ) != _priority
+                )
+                {
+                    continue;
+                }
+
+                BO_LogImmediate(
+                    "[BO][MOVE] item_id="
+                    + string(_item_id)
+                    + " from=("
+                    + string(_source.x)
+                    + ","
+                    + string(_source.y)
+                    + ") to_container="
+                    + string(_destination)
+                    + " priority="
+                    + string(_priority)
+                );
+
+                BO_Call2(_move_item, _current, _destination);
+            }
+
+            var _after = Container.GetItem(
+                INVENTORY,
+                _source.x,
+                _source.y
+            );
+
+            if(
+                is_undefined(_after)
+                || BO_ItemID(_after) != _item_id
+            )
+            {
+                break;
+            }
+        }
+    }
+
+    _bo.busy = false;
+    BO_LogImmediate("[BO][RUN] ===== B.O. click trace end =====");
+}
+
+
+function BO_SnapshotMovableInventoryCells()
+{
+    var _items = [];
+
+    if(!Container.Exists(INVENTORY))
+        return _items;
+
+    var _width = Container.GetWidth(INVENTORY);
+    var _height = Container.GetHeight(INVENTORY);
+
+    // Protect row 0 (hotbar action slots)
+    for(var y = 1; y < _height; y++)
+    {
+        for(var x = 0; x < _width; x++)
+        {
+            var _item = Container.GetItem(INVENTORY, x, y);
+
+            if(!is_undefined(_item))
+            {
+                array_push(
+                    _items,
+                    {
+                        x: x,
+                        y: y
+                    }
+                );
+            }
+        }
+    }
+
+    return _items;
+}
+
+
+// ============================================================================
+// DESTINATION FILTER / PRIORITY
+// ============================================================================
+
+function BO_LoadPersistedFilters()
+{
+    var _entries = [];
+
+    if(!file_exists("BO_filters.cfg"))
+    {
+        BO_LogImmediate("[BO][PERSIST] BO_filters.cfg not found on disk.");
+        return _entries;
+    }
+
+    var _file = file_text_open_read("BO_filters.cfg");
+
+    if(_file < 0)
+    {
+        BO_LogImmediate("[BO][PERSIST] failed to open BO_filters.cfg for read.");
+        return _entries;
+    }
+
+    while(!file_text_eof(_file))
+    {
+        var _line = file_text_read_string(_file);
+        file_text_readln(_file);
+
+        var _first = string_pos("|", _line);
+
+        if(_first <= 1)
+            continue;
+
+        var _tail = string_delete(_line, 1, _first);
+        var _second = string_pos("|", _tail);
+
+        if(_second <= 1)
+            continue;
+
+        var _key = string_copy(_line, 1, _first - 1);
+        var _existing_text = string_copy(
+            _tail,
+            1,
+            _second - 1
+        );
+        var _mask_text = string_delete(_tail, 1, _second);
+
+        array_push(
+            _entries,
+            {
+                key: _key,
+                existing_only: real(_existing_text) != 0,
+                category_mask: clamp(
+                    floor(real(_mask_text)),
+                    0,
+                    63
+                )
+            }
+        );
+    }
+
+    file_text_close(_file);
+    BO_LogImmediate("[BO][PERSIST] loaded " + string(array_length(_entries)) + " filter entries.");
+    return _entries;
+}
+
+
+function BO_WritePersistedFilters()
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo == undefined)
+        return;
+
+    var _file = file_text_open_write("BO_filters.cfg");
+
+    if(_file < 0)
+    {
+        BO_LogImmediate("[BO][PERSIST] failed to open BO_filters.cfg for write!");
+        return;
+    }
+
+    for(var i = 0; i < array_length(_bo.persisted_filters); i++)
+    {
+        var _entry = _bo.persisted_filters[i];
+
+        file_text_write_string(
+            _file,
+            _entry.key
+            + "|"
+            + string(_entry.existing_only ? 1 : 0)
+            + "|"
+            + string(_entry.category_mask)
+        );
+        file_text_writeln(_file);
+    }
+
+    file_text_close(_file);
+    BO_LogImmediate("[BO][PERSIST] saved " + string(array_length(_bo.persisted_filters)) + " filter entries.");
+}
+
+
+function BO_PersistedFilterIndex(_key)
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo == undefined)
+        return -1;
+
+    for(var i = 0; i < array_length(_bo.persisted_filters); i++)
+    {
+        if(_bo.persisted_filters[i].key == _key)
+            return i;
+    }
+
+    return -1;
+}
+
+
+function BO_SetPersistedFilter(
+    _key,
+    _existing_only,
+    _category_mask
+)
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo == undefined)
+        return;
+
+    var _index = BO_PersistedFilterIndex(_key);
+
+    if(!_existing_only && _category_mask == 0)
+    {
+        if(_index >= 0)
+            array_delete(_bo.persisted_filters, _index, 1);
+    }
+    else
+    {
+        var _entry = {
+            key: _key,
+            existing_only: _existing_only,
+            category_mask: _category_mask
+        };
+
+        if(_index >= 0)
+            _bo.persisted_filters[_index] = _entry;
+        else
+            array_push(_bo.persisted_filters, _entry);
+    }
+
+    BO_WritePersistedFilters();
+}
+
+
+function BO_PreloadNearbyFilters()
+{
+    var _nearby = BO_GetNearbyContainers();
+
+    for(var i = 0; i < array_length(_nearby); i++)
+        BO_EnsureChestFilterLoaded(_nearby[i]);
+}
+
+
+function BO_EnsureChestFilterLoaded(_container)
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(
+        _bo == undefined
+        || !Container.Exists(_container)
+    )
+    {
+        return;
+    }
+
+    for(var i = 0;
+        i < array_length(_bo.loaded_filter_containers);
+        i++)
+    {
+        if(_bo.loaded_filter_containers[i] == _container)
+            return;
+    }
+
+    array_push(_bo.loaded_filter_containers, _container);
+
+    var _section = BO_FilterStorageSection(_container);
+
+    if(string_length(_section) <= 0)
+        return;
+
+    var _persisted_index = BO_PersistedFilterIndex(_section);
+    var _existing_only = false;
+    var _category_mask = 0;
+
+    if(_persisted_index >= 0)
+    {
+        var _persisted = _bo.persisted_filters[_persisted_index];
+        _existing_only = _persisted.existing_only;
+        _category_mask = _persisted.category_mask;
+    }
+
+    if(_existing_only || _category_mask != 0)
+    {
+        var _cf_idx = BO_GetChestFilterIndex(_container);
+
+        if(_cf_idx < 0)
+        {
+            array_push(
+                _bo.chest_filters,
+                {
+                    container: _container,
+                    existing_only: _existing_only,
+                    category_mask: _category_mask
+                }
+            );
+        }
+        else
+        {
+            _bo.chest_filters[_cf_idx].existing_only = _existing_only;
+            _bo.chest_filters[_cf_idx].category_mask = _category_mask;
+        }
+    }
+
+    BO_LogImmediate(
+        "[BO][FILTER-LOAD] key="
+        + _section
+        + " container="
+        + string(_container)
+        + " existing_only="
+        + string(_existing_only)
+        + " mask="
+        + string(_category_mask)
+    );
+}
+
+
+function BO_SaveChestFilter(_container, _filter)
+{
+    var _section = BO_FilterStorageSection(_container);
+
+    if(string_length(_section) <= 0)
+        return;
+
+    var _existing_only = _filter.existing_only ? 1 : 0;
+    var _category_mask = clamp(
+        floor(_filter.category_mask),
+        0,
+        63
+    );
+
+    BO_SetPersistedFilter(
+        _section,
+        _existing_only != 0,
+        _category_mask
+    );
+
+    BO_LogImmediate(
+        "[BO][FILTER-SAVE] key="
+        + _section
+        + " existing_only="
+        + string(_existing_only)
+        + " mask="
+        + string(_category_mask)
+    );
+}
+
+
+function BO_FilterStorageSection(_container)
+{
+    var _result = "";
+
+    if(instance_exists(objInteractableChest))
+    {
+        var _count = instance_number(objInteractableChest);
+
+        for(var i = 0; i < _count; i++)
+        {
+            var _chest = instance_find(objInteractableChest, i);
+
+            if(
+                _chest != undefined
+                && instance_exists(_chest)
+                && variable_instance_exists(_chest, "container")
+                && variable_instance_get(_chest, "container") == _container
+            )
+            {
+                _result = "chest_x"
+                    + string(round(_chest.x))
+                    + "_y"
+                    + string(round(_chest.y));
+                return _result;
+            }
+        }
+    }
+
+    if(instance_exists(objInteractableChestAstral))
+    {
+        var _count_astral = instance_number(objInteractableChestAstral);
+
+        for(var a = 0; a < _count_astral; a++)
+        {
+            var _chest_a = instance_find(objInteractableChestAstral, a);
+
+            if(
+                _chest_a != undefined
+                && instance_exists(_chest_a)
+                && variable_instance_exists(_chest_a, "container")
+                && variable_instance_get(_chest_a, "container") == _container
+            )
+            {
+                _result = "astral_x"
+                    + string(round(_chest_a.x))
+                    + "_y"
+                    + string(round(_chest_a.y));
+                return _result;
+            }
+        }
+    }
+
+    return _result;
+}
+
+
+function BO_DestinationPriority(_container, _item, _contains)
+{
+    if(!BO_FilterAllowsItem(_container, _item))
+        return -1;
+
+    var _item_id = BO_ItemID(_item);
+    var _filter = BO_GetChestFilter(_container);
+    var _contains_item =
+        !is_undefined(_item_id)
+        && BO_Call2(_contains, _item_id, _container);
+
+    if(!is_undefined(_filter) && _contains_item)
+        return 0;
+
+    if(!is_undefined(_filter))
+        return 1;
+
+    return -1;
+}
+
+
+function BO_GetChestFilter(_container)
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo == undefined)
+        return undefined;
+
+    for(var i = 0; i < array_length(_bo.chest_filters); i++)
+    {
+        var _filter = _bo.chest_filters[i];
+
+        if(_filter.container == _container)
+            return _filter;
+    }
+
+    return undefined;
+}
+
+
+function BO_GetChestFilterIndex(_container)
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo == undefined)
+        return -1;
+
+    for(var i = 0; i < array_length(_bo.chest_filters); i++)
+    {
+        if(_bo.chest_filters[i].container == _container)
+            return i;
+    }
+
+    return -1;
+}
+
+
+function BO_ToggleChestFilter(_container, _button_index)
+{
+    var _bo = ModInstance.Get("BO");
+
+    if(_bo == undefined || !Container.Exists(_container))
+        return;
+
+    BO_EnsureChestFilterLoaded(_container);
+
+    var _index = BO_GetChestFilterIndex(_container);
+
+    if(_index < 0)
+    {
+        array_push(
+            _bo.chest_filters,
+            {
+                container: _container,
+                existing_only: false,
+                category_mask: 0
+            }
+        );
+
+        _index = array_length(_bo.chest_filters) - 1;
+    }
+
+    var _filter = _bo.chest_filters[_index];
+
+    if(_button_index == 0)
+    {
+        _filter.existing_only = !_filter.existing_only;
+    }
+    else
+    {
+        var _bit = BO_FilterBit(_button_index);
+
+        if((_filter.category_mask & _bit) != 0)
+            _filter.category_mask -= _bit;
+        else
+            _filter.category_mask += _bit;
+    }
+
+    _bo.chest_filters[_index] = _filter;
+    BO_SaveChestFilter(_container, _filter);
+
+    if(!_filter.existing_only && _filter.category_mask == 0)
+        array_delete(_bo.chest_filters, _index, 1);
+}
+
+
+function BO_FilterAllowsItem(_container, _item)
+{
+    var _filter = BO_GetChestFilter(_container);
+
+    if(is_undefined(_filter))
+        return false;
+
+    if(
+        variable_struct_exists(_filter, "existing_only")
+        && _filter.existing_only
+    )
+    {
+        var _contains = BO_GetCallable("container_contains_item");
+        var _item_id = BO_ItemID(_item);
+
+        if(
+            is_undefined(_contains)
+            || is_undefined(_item_id)
+            || !BO_Call2(_contains, _item_id, _container)
+        )
+        {
+            return false;
+        }
+    }
+
+    if(_filter.category_mask != 0)
+    {
+        var _category = BO_ItemCategoryBit(_item);
+
+        if((_filter.category_mask & _category) == 0)
+            return false;
+    }
+
+    return true;
+}
+
+
+function BO_ItemCategoryBit(_item)
+{
+    if(
+        !is_numeric(_item)
+        || !ds_exists(_item, ds_type_map)
+        || !ds_map_exists(_item, 7)
+    )
+    {
+        return 0;
+    }
+
+    var _type = string(_item[? 7]);
+
+    switch(_type)
+    {
+        // Wood, ore, monster drops, cooking inputs and fish.
+        case "Etc":
+        case "Ingredient":
+        case "Spice":
+        case "Fish":
+            return 1;
+
+        // Placeable construction and storage objects.
+        case "Building":
+        case "Floor":
+        case "Storage":
+        case "Crafting Table":
+        case "Cable":
+            return 2;
+
+        // Potions, food and other consumed stacks.
+        case "Usable":
+            return 4;
+
+        // Equippable objects.
+        case "Weapon":
+        case "Tool":
+        case "Accesory":
+        case "Accessory":
+        case "Head":
+        case "Body":
+        case "Legs":
+        case "Hook":
+        case "Fishing Rod":
+        case "Pet":
+            return 8;
+
+        // Ammunition and manually thrown projectiles.
+        case "Ammo":
+        case "Throwable":
+            return 16;
+
+        // Currency, maps, recipes, summons.
+        case "Currency":
+        case "Map":
+        case "Recipe":
+        case "Summon":
+            return 32;
+    }
+
+    return 0;
+}
+
+
+function BO_ItemID(_item)
+{
+    if(
+        is_numeric(_item)
+        && ds_exists(_item, ds_type_map)
+        && ds_map_exists(_item, 0)
+    )
+    {
+        return _item[? 0];
+    }
+
+    return undefined;
+}
+
+
+function BO_ItemIsMovable(_item)
+{
+    return is_numeric(_item)
+        && ds_exists(_item, ds_type_map)
+        && ds_map_exists(_item, 6)
+        && is_numeric(_item[? 6])
+        && _item[? 6] >= 1;
+}
+
+
+function BO_GetCallable(_name)
+{
+    if(!variable_global_exists(_name))
+        return undefined;
+
+    var _callable = variable_global_get(_name);
+
+    return is_callable(_callable) ? _callable : undefined;
+}
+
+
+function BO_Call1(_callable, _a)
+{
+    if(is_method(_callable))
+        return method_call(_callable, [_a]);
+
+    return script_execute_ext(_callable, [_a]);
+}
+
+
+function BO_Call2(_callable, _a, _b)
+{
+    if(is_method(_callable))
+        return method_call(_callable, [_a, _b]);
+
+    return script_execute_ext(_callable, [_a, _b]);
+}
+
+
+function BO_Call3(_callable, _a, _b, _c)
+{
+    if(is_method(_callable))
+        return method_call(_callable, [_a, _b, _c]);
+
+    return script_execute_ext(_callable, [_a, _b, _c]);
+}
+
+
+function BO_Call4(_callable, _a, _b, _c, _d)
+{
+    if(is_method(_callable))
+        return method_call(_callable, [_a, _b, _c, _d]);
+
+    return script_execute_ext(_callable, [_a, _b, _c, _d]);
+}
+
+
+// ============================================================================
+// NATIVE NEARBY CONTAINERS
+// ============================================================================
+
+function BO_GetNearbyContainersByDistance()
+{
+    var _max_distance = 300;
+    var _containers = BO_GetNearbyContainers();
+    var _entries = [];
+
+    for(var i = 0; i < array_length(_containers); i++)
+    {
+        array_push(
+            _entries,
+            {
+                container: _containers[i],
+                distance: 1000000000 + i
+            }
+        );
+    }
+
+    if(
+        instance_exists(objPlayer)
+        && !is_undefined(MY_PLAYER)
+        && instance_exists(objInteractableChest)
+    )
+    {
+        var _count = instance_number(objInteractableChest);
+
+        for(var c = 0; c < _count; c++)
+        {
+            var _chest = instance_find(objInteractableChest, c);
+
+            if(
+                _chest != undefined
+                && instance_exists(_chest)
+                && variable_instance_exists(_chest, "container")
+            )
+            {
+                var _chest_container = variable_instance_get(_chest, "container");
+
+                for(var e = 0; e < array_length(_entries); e++)
+                {
+                    if(_entries[e].container == _chest_container)
+                    {
+                        _entries[e].distance = point_distance(
+                            MY_PLAYER.x,
+                            MY_PLAYER.y,
+                            _chest.x,
+                            _chest.y
+                        );
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    for(var left = 0; left < array_length(_entries) - 1; left++)
+    {
+        var _best = left;
+
+        for(var right = left + 1; right < array_length(_entries); right++)
+        {
+            if(_entries[right].distance < _entries[_best].distance)
+                _best = right;
+        }
+
+        if(_best != left)
+        {
+            var _swap = _entries[left];
+            _entries[left] = _entries[_best];
+            _entries[_best] = _swap;
+        }
+    }
+
+    var _sorted = [];
+
+    for(var s = 0; s < array_length(_entries); s++)
+    {
+        if(_entries[s].distance <= _max_distance)
+        {
+            array_push(_sorted, _entries[s].container);
+        }
+        else
+        {
+            BO_LogImmediate(
+                "[BO][NEARBY-EXCLUDED] container="
+                + string(_entries[s].container)
+                + " reason=distance distance_px="
+                + string(_entries[s].distance)
+                + " max_px="
+                + string(_max_distance)
+            );
+        }
+    }
+
+    return _sorted;
+}
+
+
+function BO_GetNearbyContainers()
+{
+    if(!variable_global_exists("get_nearby_chest_containers"))
+        return [];
+
+    var _get_nearby = variable_global_get("get_nearby_chest_containers");
+
+    if(!is_callable(_get_nearby))
+        return [];
+
+    var _result;
+
+    if(is_method(_get_nearby))
+        _result = method_call(_get_nearby, []);
+    else
+        _result = script_execute(_get_nearby);
+
+    if(is_array(_result))
+        return _result;
+
+    if(is_numeric(_result) && ds_exists(_result, ds_type_list))
+    {
+        var _array = [];
+
+        for(var i = 0; i < ds_list_size(_result); i++)
+            array_push(_array, _result[| i]);
+
+        return _array;
+    }
+
+    return [];
+}
+
+
+// ============================================================================
+// IMMEDIATE LOGGING
+// ============================================================================
+
+function BO_LogImmediate(_line)
+{
+    var _file = file_text_open_append("BO.log");
+
+    if(_file < 0)
+        return;
+
+    file_text_write_string(_file, string(_line));
+    file_text_writeln(_file);
+    file_text_close(_file);
+}
+
+
+function BO_FilterTrace(_container)
+{
+    var _filter = BO_GetChestFilter(_container);
+
+    if(is_undefined(_filter))
+        return "none";
+
+    return "existing_only="
+        + string(_filter.existing_only)
+        + " mask="
+        + string(_filter.category_mask);
+}
+
+
+function BO_ContainerPhysicalTrace(_container)
+{
+    if(instance_exists(objInteractableChest))
+    {
+        var _count = instance_number(objInteractableChest);
+
+        for(var i = 0; i < _count; i++)
+        {
+            var _chest = instance_find(objInteractableChest, i);
+
+            if(
+                _chest != undefined
+                && instance_exists(_chest)
+                && variable_instance_exists(_chest, "container")
+                && variable_instance_get(_chest, "container") == _container
+            )
+            {
+                var _distance = -1;
+
+                if(instance_exists(objPlayer) && !is_undefined(MY_PLAYER))
+                {
+                    _distance = point_distance(
+                        MY_PLAYER.x,
+                        MY_PLAYER.y,
+                        _chest.x,
+                        _chest.y
+                    );
+                }
+
+                return "physical_instance="
+                    + string(_chest)
+                    + " pos=("
+                    + string(_chest.x)
+                    + ","
+                    + string(_chest.y)
+                    + ") distance="
+                    + string(_distance);
+            }
+        }
+    }
+
+    return "physical=none";
+}
