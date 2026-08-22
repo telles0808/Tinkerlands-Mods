@@ -98,7 +98,7 @@ For developers and modders looking to understand Tinkerlands' engine variables, 
 
 ---
 
-## 🔨 Building from Source
+## 🔨 Building from Source & 1-Click `.cmd` Scripts
 
 ### ⚙️ Prerequisites & Environment
 Before building the mods from source, ensure you have:
@@ -107,42 +107,68 @@ Before building the mods from source, ensure you have:
 * **Git:** [Git for Windows](https://git-scm.com/) to clone the repository.
 * **Tinkerlands (Steam):** Required only if using the `-Deploy` flag to auto-copy to your game's directory.
 
-> [!NOTE]
-> **No external compilers or C++ tools are needed.** The automated build script (`build.ps1`) handles all GML string encoding (`#$#` / `%$%`), JSON manifest generation, and ZIP `.mod` packaging natively via PowerShell.
+---
 
-### 🚀 Build Steps
+### ⚡ 1-Click Automated Build Scripts (`.cmd`)
 
-1. **Clone the Repository:**
-   ```powershell
-   git clone https://github.com/telles0808/Tinkerlands-Mods.git
-   cd Tinkerlands-Mods
-   ```
+Each mod directory contains a ready-to-run Windows Command Script (`.cmd`) located right alongside its source file:
 
-2. **(If needed) Allow PowerShell Script Execution:**
-   Windows may restrict running unsigned `.ps1` scripts by default. In your PowerShell terminal, run:
-   ```powershell
-   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-   ```
+| Mod | 1-Click Script Path | What It Does |
+| :--- | :--- | :--- |
+| **Better Organizer** | `mods/BO/src/Build_BO.cmd` *(or `mods/BO/Build_BO.cmd`)* | Compiles `BO.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **NPC Radar** | `mods/Radar/src/Build_Radar.cmd` *(or `mods/Radar/Build_Radar.cmd`)* | Compiles `Radar.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **RealClock** | `mods/RealClock/src/Build_RealClock.cmd` *(or `mods/RealClock/Build_RealClock.cmd`)* | Compiles `RealClock.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **Fog** | `mods/Fog/src/Build_Fog.cmd` *(or `mods/Fog/Build_Fog.cmd`)* | Compiles `Fog.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **All Mods** | `tools/Build_All.cmd` | Compiles and deploys all 4 mods sequentially in a single click. |
 
-3. **Compile the Mods:**
-   ```powershell
-   # Compile Better Organizer (BO) mod:
-   .\tools\build.ps1 -ModName BO
+Simply **double-click** the `.cmd` file to execute the complete build, packaging, hot-reload, and cache-clearing pipeline automatically!
 
-   # Compile Radar mod:
-   .\tools\build.ps1 -ModName Radar
+---
 
-   # Compile Fog mod:
-   .\tools\build.ps1 -ModName Fog
+### ✏️ How to Edit & Customize the `.cmd` Scripts
 
-   # Compile RealClock mod:
-   .\tools\build.ps1 -ModName RealClock
+Right-click any `Build_<ModName>.cmd` file and select **Edit** (or open in VS Code / Notepad).
 
-   # Compile and automatically deploy directly to your Steam Tinkerlands mods folder:
-   .\tools\build.ps1 -ModName BO -Deploy
-   ```
+#### 1. Custom Steam Library Path
+By default, the script automatically searches all common Steam library locations and queries the Windows Registry. If your Tinkerlands is installed in a custom non-standard directory:
+Open [tools/build.ps1](tools/build.ps1) and add your custom path to the `$candidatePaths` array:
+```powershell
+$candidatePaths = @(
+    "D:\CustomGames\SteamLibrary\steamapps\common\Tinkerlands\mods",
+    "C:\Games\Steam\steamapps\common\Tinkerlands\mods",
+    "C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods"
+)
+```
 
-The compiled mod packages will be output to both `mods/<ModName>/dist/<ModName>.mod` and `releases/<ModName>.mod`.
+#### 2. Disable Automatic Steam Deployment
+If you only want to compile the `.mod` file into `dist/` and `releases/` without copying to your game folder, remove the `-Deploy` flag from the `.cmd` command:
+```diff
+- & $buildTool -ModName 'BO' -Deploy;
++ & $buildTool -ModName 'BO';
+```
+
+#### 3. Automatic Silent Mode
+To prevent the terminal window from waiting for a keypress upon completion, remove the `pause` command at the bottom of the `.cmd` file.
+
+---
+
+### 🚀 Manual PowerShell Build Commands
+
+You can also run builds directly from PowerShell:
+```powershell
+# Compile Better Organizer (BO) mod:
+.\tools\build.ps1 -ModName BO
+
+# Compile and automatically deploy directly to Steam:
+.\tools\build.ps1 -ModName BO -Deploy
+
+# Compile other mods:
+.\tools\build.ps1 -ModName Radar -Deploy
+.\tools\build.ps1 -ModName RealClock -Deploy
+.\tools\build.ps1 -ModName Fog -Deploy
+```
+
+The compiled mod packages are saved to `mods/<ModName>/dist/<ModName>.mod` and `releases/<ModName>.mod`.
 
 ---
 
