@@ -15,8 +15,8 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 | :--- | :--- | :---: | :---: |
 | **[Better Organizer (v1.0)](#-better-organizer-bo-v10)** | Smart inventory deposit system with interactive 7-channel chest filter bars, category routing, and hotbar protection. | ✅ Stable | [⬇️ Download BO.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/BO.mod) |
 | **[NPC Radar (v1.3)](#-npc-radar-v13)** | Real-time NPC tracker with HUD toggle button, custom portraits, and distance indicators. Zero FPS lag. | ✅ Stable | [⬇️ Download Radar.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Radar.mod) |
-| **[Fog (v1.0)](#-fog-v10)** | Modifies the minimap fog layer to provide 95% translucent visibility across explored areas. | ✅ Stable | [⬇️ Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Fog.mod) |
 | **[RealClock (v1.0)](#-realclock-v10)** | Displays the computer's real local time in a responsive 24-hour HUD clock without requiring the Clock accessory. | ✅ Stable | [⬇️ Download RealClock.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/RealClock.mod) |
+| **[Fog (v1.0)](#-fog-v10)** | Modifies the minimap fog layer to provide 95% translucent visibility across explored areas. | ✅ Stable | [⬇️ Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Fog.mod) |
 
 ---
 
@@ -59,7 +59,11 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 * **On/Off Toggle Button:** Integrated cleanly onto the HUD near the minimap (click the Sonar icon to toggle).
 * **Native $O(1)$ ID Lookup:** Resolves character portraits via the game's internal `npcID` database table, ensuring full compatibility with localized and generic humanoid NPCs.
 * **Ultra-Smooth 60 FPS:** Uses batch coordinate updating and identity resolution throttling for zero stutters.
-* **Source:** [mods/Radar/src/Radar.gml](mods/Radar/src/Radar.gml)
+* **Preview:**
+
+  ![NPC Radar Preview](mods/Radar/preview.png)
+
+* **Documentation & Source:** [mods/Radar/README.md](mods/Radar/README.md) • [mods/Radar/src/Radar.gml](mods/Radar/src/Radar.gml)
 
 ---
 
@@ -80,7 +84,11 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 ### 🌫️ Fog (v1.0)
 * **Enhanced Exploration:** Adjusts the alpha channel on the minimap surface, rendering the explored map with 95% translucency.
 * **Seamless:** Hooks directly into `MINIMAP.render_surface` without interfering with game saves or world generation.
-* **Source:** [mods/Fog/src/Fog.gml](mods/Fog/src/Fog.gml)
+* **Preview:**
+
+  ![Fog Mod Preview](mods/Fog/preview.png)
+
+* **Documentation & Source:** [mods/Fog/README.md](mods/Fog/README.md) • [mods/Fog/src/Fog.gml](mods/Fog/src/Fog.gml)
 
 ---
 
