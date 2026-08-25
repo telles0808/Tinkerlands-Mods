@@ -1,7 +1,7 @@
 /*
 NPCRadar
 Tinkerlands Mod
-Author: Telles0808 V1.3
+Author: Telles0808 V1.4
 */
 
 OnIslandArrive(function()
@@ -91,9 +91,41 @@ function Radar_Call(_callable)
     return script_execute(_callable);
 }
 
+function Radar_TutorialActive()
+{
+    if(variable_global_exists("WORLD_FLAGS"))
+    {
+        var _wf = variable_global_get("WORLD_FLAGS");
+
+        if(is_struct(_wf) && variable_struct_exists(_wf, "tutorialCompleted"))
+        {
+            return !_wf.tutorialCompleted;
+        }
+    }
+
+    return false;
+}
+
+function Radar_WorldMapOpen()
+{
+    if(instance_exists(objGUIMapChartController)
+    || instance_exists(objGUIShipNavigationController))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 function Radar_HUDVisible()
 {
     if(!instance_exists(objGUIIngameController))
+        return false;
+
+    if(Radar_TutorialActive())
+        return false;
+
+    if(Radar_WorldMapOpen())
         return false;
 
     if(Radar_CutsceneActive())
@@ -108,15 +140,22 @@ function Radar_HUDVisible()
     if(variable_global_exists("guiMapEnabled") && !global.guiMapEnabled)
         return false;
 
-    if(instance_exists(objGUIMapChartController)
-    || instance_exists(objGUIMenuController)
+    if(instance_exists(objGUIMenuController)
     || instance_exists(objGUINPCController)
+    || instance_exists(objGUINPCGiftController)
+    || instance_exists(objGUINPCStorageController)
     || instance_exists(objGUIShopController)
     || instance_exists(objGUICraftingController)
     || instance_exists(objGUICodexController)
     || instance_exists(objGUICommunityController)
-    || instance_exists(objGUIShipNavigationController))
+    || instance_exists(objGUIGuideController)
+    || instance_exists(objGUIBank)
+    || instance_exists(objGUIEnchant)
+    || instance_exists(objGUIReforgeController)
+    || instance_exists(objGUIRecyclerController))
+    {
         return false;
+    }
 
     return true;
 }
@@ -124,6 +163,18 @@ function Radar_HUDVisible()
 function Radar_Add(_npc)
 {
     if(_npc == undefined || !instance_exists(_npc))
+        return;
+
+    if(instance_exists(objPlayer) && !is_undefined(MY_PLAYER))
+    {
+        if(variable_instance_exists(MY_PLAYER, "netRegion") && variable_instance_exists(_npc, "netRegion"))
+        {
+            if(_npc.netRegion != MY_PLAYER.netRegion)
+                return;
+        }
+    }
+
+    if(variable_instance_exists(_npc, "visible") && !_npc.visible)
         return;
 
     var _m = ModInstance.Get("Radar");
@@ -181,11 +232,29 @@ function Radar_Update()
     {
         _m.tick = 0;
 
+        var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
+        var _p_reg = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
+
         for(var i = array_length(_m.npcs) - 1; i >= 0; i--)
         {
             var _n = _m.npcs[i];
 
             if(_n.inst == undefined || !instance_exists(_n.inst))
+            {
+                array_delete(_m.npcs, i, 1);
+                continue;
+            }
+
+            if(_has_p_reg && variable_instance_exists(_n.inst, "netRegion"))
+            {
+                if(variable_instance_get(_n.inst, "netRegion") != _p_reg)
+                {
+                    array_delete(_m.npcs, i, 1);
+                    continue;
+                }
+            }
+
+            if(variable_instance_exists(_n.inst, "visible") && !_n.inst.visible)
             {
                 array_delete(_m.npcs, i, 1);
                 continue;
@@ -348,6 +417,12 @@ function Radar_ButtonInput(_m)
         _y + _r
     ))
     {
+        // Prevents world action / attack click-through
+        with(objGUIIngameController)
+        {
+            craftMo = true;
+        }
+
         Input.DisableMenuInputs(0.1);
 
         if(mouse_check_button_pressed(mb_left))
@@ -678,11 +753,23 @@ function Radar_Draw()
     var _cam_x = CAMERA_X;
     var _cam_y = CAMERA_Y;
 
+    var _has_player_region = variable_instance_exists(MY_PLAYER, "netRegion");
+    var _player_region = _has_player_region ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
+
     for(var i = 0; i < array_length(_m.npcs); i++)
     {
         var _n = _m.npcs[i];
 
-        if(_n.name == "")
+        if(_n.name == "" || !instance_exists(_n.inst))
+            continue;
+
+        if(_has_player_region && variable_instance_exists(_n.inst, "netRegion"))
+        {
+            if(variable_instance_get(_n.inst, "netRegion") != _player_region)
+                continue;
+        }
+
+        if(variable_instance_exists(_n.inst, "visible") && !_n.inst.visible)
             continue;
 
         Radar_DrawTarget(
