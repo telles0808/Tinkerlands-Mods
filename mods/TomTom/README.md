@@ -18,28 +18,28 @@
 
 ---
 
-## 🌟 Key Features & Engine Mechanics
+## 🌟 Key Features
 
-### 1. 🏹 Dual-Layer Off-Screen Radar (Anti-Overlap Engine)
-When multiple entities (such as NPCs and nearby monsters) are in the same direction, standard radar mods draw all icons on top of each other, creating unreadable visual clutter. TomTom solves this with **geometric dual-layer radial separation**:
+### 1. 🏹 Dual-Layer Off-Screen Radar (Anti-Overlap System)
+When multiple entities (such as NPCs and nearby monsters) are in the same direction, standard radar indicators draw over each other. TomTom solves this with **geometric dual-layer radial separation**:
 * **Outer Ring ($18\text{ px}$ from screen edge):** Reserved for **Monsters**, **Critters**, **Chests**, and **User Pins**.
 * **Inner Ring ($48\text{ px}$ from screen edge):** Reserved for **NPCs** and **Multiplayer Companions**.
-* **Directional Arrows & Meters:** Dynamic trigonometric vector calculation (`cos`/`-sin`) projects high-precision directional arrows with distance in meters (`Xm`) with comfortable vertical breathing room ($+3\text{ px}$).
+* **Directional Arrows & Meters:** Dynamic directional arrows with real-time distance in meters (`Xm`) and comfortable vertical spacing.
 
-### 2. 🪦 Automatic Death Tombstone Pin (`sprTombStone`)
-* **Instant Death Detection:** Intercepts player health transitions (`MY_PLAYER.hp <= 0`) before respawn.
-* **Corpse Location Saved:** Generates a persistent Death Pin on the exact tile of death using the native **`sprTombStone`** asset.
+### 2. 🪦 Automatic Death Tombstone Pin
+* **Instant Death Detection:** Intercepts player death before respawning.
+* **Corpse Location Saved:** Automatically places a persistent Tombstone Pin on the exact tile where you died.
 * **Full GPS Tracking:** Directs you straight back to your items upon respawning.
 * **Map Trash Support:** Once you recover your loot, open the map (<kbd>M</kbd>) and drag the tombstone pin into the glowing red trash bin to delete it.
 
-### 3. 👹 Entity & Mob Scanner (`instance_number(objMob)`)
-* **Critter & Monster Identification:** Scans all active entities in the current network region (`netRegion`).
-* **Real Representative Sprites:** Renders real creature sprites (e.g., Yellow, Purple, and Cyan Butterflies, Red & Blue Crabs, Rabbits, Slimes, Goblins, Bosses) instead of generic markers.
-* **Bounding-Box Origin Normalization:** Normalizes bottom-center and custom sprite origins (`sprite_get_xoffset`, `sprite_get_yoffset`) so that floating distance tags are always geometrically centered right below the creature.
+### 3. 👹 Entity & Mob Scanner
+* **Critter & Monster Identification:** Detects all active creatures in your current region.
+* **Real Representative Sprites:** Renders real creature portraits (e.g., Yellow, Purple, and Cyan Butterflies, Red & Blue Crabs, Rabbits, Slimes, Goblins, Bosses) instead of generic markers.
+* **Geometric Origin Centering:** Centers distance tags directly beneath every creature regardless of sprite dimensions.
 
 ### 4. 👥 Intelligent NPC Rendering
 * **Off-Screen:** Displays NPC character portraits and distance tags along the inner radar perimeter.
-* **On-Screen (Clean World Aesthetics):** When an NPC enters your visible screen, the mod automatically hides the HUD portrait and renders the NPC's name centered directly beneath their feet (`_sy + 8 * _s`), leaving the world clean and immersive.
+* **On-Screen (Clean World Aesthetics):** When an NPC enters your visible screen, the mod automatically hides the HUD portrait and renders the NPC's name centered directly beneath their feet, leaving the world clean and immersive.
 
 ### 5. 🗺️ Interactive Fullscreen Map & Pins
 * **5 Distinct Pin Categories:** Waypoint (📍), Storage (📦), Point of Interest (❓), Boss/Skull (💀), and Death Tombstone (🪦).
@@ -55,7 +55,7 @@ When multiple entities (such as NPCs and nearby monsters) are in the same direct
   * 👹 **Goblin Icon:** Toggle Monster and Critter tracking.
 
 ### 7. 🧭 Zero-Clutter Minimap Border Projection
-* Native Tinkerlands already renders NPC heads inside the minimap. To eliminate duplicated icons, TomTom only projects NPC portraits on the minimap frame border when the NPC is **outside** the minimap's visible bounds.
+* Suppresses redundant icons inside the minimap where the base game already renders NPC heads, projecting portraits onto the minimap border only when entities are outside the minimap viewport.
 
 ---
 
@@ -88,10 +88,10 @@ When multiple entities (such as NPCs and nearby monsters) are in the same direct
 
 * **v2.0:**
   * **Dual-Layer Radar:** Implemented separated outer ($18\text{ px}$) and inner ($48\text{ px}$) margins to eliminate icon overlap.
-  * **Death Pin System:** Added automatic death detection and persistent tombstone waypoint creation using `sprTombStone`.
-  * **Mob & Critter Tracking Engine:** Rebuilt scanner with direct `objMob` instance indexing and real creature sprites.
-  * **Bounding-Box Centering:** Compensated sprite origin offsets for entity sprites anchored at bottom-center.
-  * **On-Screen Clean NPCs:** Automatically hides portraits on-screen and elevates name text snug beneath feet (`+8px`).
+  * **Death Pin System:** Added automatic death detection and persistent tombstone waypoint creation.
+  * **Mob & Critter Tracking Engine:** Rebuilt scanner with creature identification and real representative sprites.
+  * **Geometric Centering:** Calibrated sprite origin offsets for accurate distance text alignment.
+  * **On-Screen Clean NPCs:** Automatically hides portraits on-screen and elevates name text snug beneath feet.
   * **Sub-Badge HUD Controller:** Added 3 modular toggles beside the enlarged $56\text{ px}$ Sonar button.
   * **Minimap Clutter Elimination:** Suppressed duplicate internal minimap blips for entities natively drawn by the base game.
 * **v1.4:**
