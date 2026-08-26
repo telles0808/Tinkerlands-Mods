@@ -31,18 +31,18 @@ Mods are packaged as standard ZIP archives renamed to `<ModName>.mod`:
 * **`info.json`**:
   ```json
   {
-      "name": "Radar",
+      "name": "TomTom",
       "author": "Telles0808",
-      "version": "1.3.0",
-      "description": "High-performance NPC Radar for Tinkerlands"
+      "version": "1.0.0",
+      "description": "Integrated Sonar Radar and Waypoints for Tinkerlands"
   }
   ```
 
 * **`scripts/<ModName>@<modname_lower>.json`**:
   ```json
   {
-      "id": 5001,
-      "key": "Radar@radar",
+      "id": 5004,
+      "key": "TomTom@tomtom",
       "event": "E_CS_EVENT.None",
       "code": "<ENCODED_GML_CODE>"
   }

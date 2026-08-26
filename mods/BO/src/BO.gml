@@ -1,9 +1,10 @@
 /*
     ========================================================================
-    TINKERLANDS - B.O.
-    Better Organizer
+    TINKERLANDS - Better Organizer (BO)
+    Author: Telles0808
+    ID: 5003
 
-    In-Memory & Persisted Chest Filter Bar
+    Interactive 7-channel chest filter bar & smart inventory deposit system.
     ========================================================================
 */
 
@@ -131,12 +132,23 @@ function BO_Update()
         && _mx <= _button.x + _half
         && _my >= _button.y - _half
         && _my <= _button.y + _half
-        && mouse_check_button_pressed(mb_left)
     )
     {
-        _bo.feedback_active = true;
-        _bo.feedback_started_at = get_timer();
-        BO_RunRepeatedDeposit();
+        // Prevents world attack / tool swing click-through
+        with(objGUIIngameController)
+        {
+            craftMo = true;
+        }
+
+        Input.DisableMenuInputs(0.1);
+
+        if(mouse_check_button_pressed(mb_left))
+        {
+            _bo.feedback_active = true;
+            _bo.feedback_started_at = get_timer();
+            mouse_clear(mb_left);
+            BO_RunRepeatedDeposit();
+        }
     }
 }
 
@@ -412,6 +424,13 @@ function BO_FilterButtonInput(_bo)
     if(_hovered >= 0)
     {
         _bo.hovered_filter_index = _hovered;
+
+        // Prevents world action / tool attack click-through
+        with(objGUIIngameController)
+        {
+            craftMo = true;
+        }
+
         Input.DisableMenuInputs(0.1);
 
         if(mouse_check_button_pressed(mb_left))
@@ -698,6 +717,7 @@ function BO_RunRepeatedDeposit()
 
                 if(
                     is_undefined(_current)
+                    || !BO_ItemIsMovable(_current)
                     || BO_ItemID(_current) != _item_id
                 )
                 {
@@ -739,6 +759,7 @@ function BO_RunRepeatedDeposit()
 
             if(
                 is_undefined(_after)
+                || !BO_ItemIsMovable(_after)
                 || BO_ItemID(_after) != _item_id
             )
             {
@@ -769,7 +790,7 @@ function BO_SnapshotMovableInventoryCells()
         {
             var _item = Container.GetItem(INVENTORY, x, y);
 
-            if(!is_undefined(_item))
+            if(!is_undefined(_item) && BO_ItemIsMovable(_item))
             {
                 array_push(
                     _items,
@@ -1257,36 +1278,34 @@ function BO_ItemCategoryBit(_item)
     if(
         !is_numeric(_item)
         || !ds_exists(_item, ds_type_map)
-        || !ds_map_exists(_item, 7)
     )
     {
         return 0;
     }
 
-    var _type = string(_item[? 7]);
+    var _type = ds_map_exists(_item, 7) ? string(_item[? 7]) : "";
+    var _id_str = ds_map_exists(_item, 0) ? string_lower(string(_item[? 0])) : "";
+    var _name_str = ds_map_exists(_item, 1) ? string_lower(string(_item[? 1])) : "";
+    var _combined = _id_str + " " + _name_str;
 
+    // 1. Explicit native types
     switch(_type)
     {
-        // Wood, ore, monster drops, cooking inputs and fish.
-        case "Etc":
         case "Ingredient":
         case "Spice":
         case "Fish":
-            return 1;
+            return 1; // Recursos / Materiais
 
-        // Placeable construction and storage objects.
         case "Building":
         case "Floor":
         case "Storage":
         case "Crafting Table":
         case "Cable":
-            return 2;
+            return 2; // Construção / Mobília
 
-        // Potions, food and other consumed stacks.
         case "Usable":
-            return 4;
+            return 4; // Poções / Comidas / Consumíveis
 
-        // Equippable objects.
         case "Weapon":
         case "Tool":
         case "Accesory":
@@ -1297,22 +1316,280 @@ function BO_ItemCategoryBit(_item)
         case "Hook":
         case "Fishing Rod":
         case "Pet":
-            return 8;
+            return 8; // Equipamentos / Acessórios
 
-        // Ammunition and manually thrown projectiles.
         case "Ammo":
         case "Throwable":
-            return 16;
+            return 16; // Munições / Arremessáveis
 
-        // Currency, maps, recipes, summons.
         case "Currency":
         case "Map":
         case "Recipe":
         case "Summon":
-            return 32;
+        case "Key":
+            return 32; // Miscelânea / Moedas / Chaves
     }
 
-    return 0;
+    // 2. HIGHEST KEYWORD PRIORITY: Miscellaneous, Keys, Tickets, Scrolls, Coins, Valuables (Bit 32)
+    // MUST BE CHECKED BEFORE METALS (Prevents "golden key" or "gold ticket" matching "gold" as resource!)
+    if(
+        string_pos("key", _combined) > 0
+        || string_pos("chave", _combined) > 0
+        || string_pos("ticket", _combined) > 0
+        || string_pos("scroll", _combined) > 0
+        || string_pos("pergaminho", _combined) > 0
+        || string_pos("recipe", _combined) > 0
+        || string_pos("receita", _combined) > 0
+        || string_pos("blueprint", _combined) > 0
+        || string_pos("map", _combined) > 0
+        || string_pos("mapa", _combined) > 0
+        || string_pos("coin", _combined) > 0
+        || string_pos("moeda", _combined) > 0
+        || string_pos("token", _combined) > 0
+        || string_pos("relic", _combined) > 0
+        || string_pos("reliquia", _combined) > 0
+        || string_pos("trophy", _combined) > 0
+        || string_pos("badge", _combined) > 0
+        || string_pos("document", _combined) > 0
+        || string_pos("letter", _combined) > 0
+        || string_pos("wallet", _combined) > 0
+    )
+    {
+        return 32;
+    }
+
+    // 3. Equipment / Weapons / Tools / Accessories (Bit 8)
+    if(
+        string_pos("sword", _combined) > 0
+        || string_pos("espada", _combined) > 0
+        || string_pos("pickaxe", _combined) > 0
+        || string_pos("picareta", _combined) > 0
+        || string_pos("axe", _combined) > 0
+        || string_pos("machado", _combined) > 0
+        || string_pos("hammer", _combined) > 0
+        || string_pos("martelo", _combined) > 0
+        || string_pos("shovel", _combined) > 0
+        || string_pos("pa", _combined) > 0
+        || string_pos("bow", _combined) > 0
+        || string_pos("arco", _combined) > 0
+        || string_pos("staff", _combined) > 0
+        || string_pos("cajado", _combined) > 0
+        || string_pos("wand", _combined) > 0
+        || string_pos("varinha", _combined) > 0
+        || string_pos("shield", _combined) > 0
+        || string_pos("escudo", _combined) > 0
+        || string_pos("helmet", _combined) > 0
+        || string_pos("capacete", _combined) > 0
+        || string_pos("armor", _combined) > 0
+        || string_pos("armadura", _combined) > 0
+        || string_pos("boots", _combined) > 0
+        || string_pos("bota", _combined) > 0
+        || string_pos("ring", _combined) > 0
+        || string_pos("anel", _combined) > 0
+        || string_pos("amulet", _combined) > 0
+        || string_pos("amuleto", _combined) > 0
+        || string_pos("compass", _combined) > 0
+        || string_pos("bussola", _combined) > 0
+        || string_pos("sonar", _combined) > 0
+        || string_pos("saddle", _combined) > 0
+        || string_pos("sela", _combined) > 0
+        || string_pos("pouch", _combined) > 0
+        || string_pos("bolsa", _combined) > 0
+        || string_pos("fishing", _combined) > 0
+        || string_pos("pesca", _combined) > 0
+    )
+    {
+        return 8;
+    }
+
+    // 4. Consumables / Potions / Food / Drinks / Flasks (Bit 4)
+    if(
+        string_pos("potion", _combined) > 0
+        || string_pos("pocao", _combined) > 0
+        || string_pos("flask", _combined) > 0
+        || string_pos("frasco", _combined) > 0
+        || string_pos("bottle", _combined) > 0
+        || string_pos("garrafa", _combined) > 0
+        || string_pos("food", _combined) > 0
+        || string_pos("comida", _combined) > 0
+        || string_pos("stew", _combined) > 0
+        || string_pos("ensopado", _combined) > 0
+        || string_pos("soup", _combined) > 0
+        || string_pos("sopa", _combined) > 0
+        || string_pos("bread", _combined) > 0
+        || string_pos("pao", _combined) > 0
+        || string_pos("pie", _combined) > 0
+        || string_pos("torta", _combined) > 0
+        || string_pos("berry", _combined) > 0
+        || string_pos("baga", _combined) > 0
+        || string_pos("fruit", _combined) > 0
+        || string_pos("fruta", _combined) > 0
+        || string_pos("drink", _combined) > 0
+        || string_pos("bebida", _combined) > 0
+        || string_pos("tea", _combined) > 0
+        || string_pos("cha", _combined) > 0
+    )
+    {
+        return 4;
+    }
+
+    // 5. Ammo / Throwables (Bit 16)
+    if(
+        string_pos("arrow", _combined) > 0
+        || string_pos("flecha", _combined) > 0
+        || string_pos("bullet", _combined) > 0
+        || string_pos("bala", _combined) > 0
+        || string_pos("dart", _combined) > 0
+        || string_pos("dardo", _combined) > 0
+        || string_pos("bomb", _combined) > 0
+        || string_pos("bomba", _combined) > 0
+        || string_pos("dynamite", _combined) > 0
+        || string_pos("dinamite", _combined) > 0
+        || string_pos("shuriken", _combined) > 0
+        || string_pos("grenade", _combined) > 0
+        || string_pos("granada", _combined) > 0
+    )
+    {
+        return 16;
+    }
+
+    // 6. Building / Furniture / Construction (Bit 2)
+    if(
+        string_pos("wall", _combined) > 0
+        || string_pos("parede", _combined) > 0
+        || string_pos("floor", _combined) > 0
+        || string_pos("chao", _combined) > 0
+        || string_pos("piso", _combined) > 0
+        || string_pos("door", _combined) > 0
+        || string_pos("porta", _combined) > 0
+        || string_pos("chest", _combined) > 0
+        || string_pos("bau", _combined) > 0
+        || string_pos("table", _combined) > 0
+        || string_pos("mesa", _combined) > 0
+        || string_pos("chair", _combined) > 0
+        || string_pos("cadeira", _combined) > 0
+        || string_pos("torch", _combined) > 0
+        || string_pos("tocha", _combined) > 0
+        || string_pos("furnace", _combined) > 0
+        || string_pos("fornalha", _combined) > 0
+        || string_pos("anvil", _combined) > 0
+        || string_pos("bigorna", _combined) > 0
+        || string_pos("platform", _combined) > 0
+        || string_pos("plataforma", _combined) > 0
+        || string_pos("cable", _combined) > 0
+        || string_pos("cabo", _combined) > 0
+        || string_pos("wire", _combined) > 0
+        || string_pos("fio", _combined) > 0
+        || string_pos("brick", _combined) > 0
+        || string_pos("tijolo", _combined) > 0
+        || string_pos("bed", _combined) > 0
+        || string_pos("cama", _combined) > 0
+    )
+    {
+        return 2;
+    }
+
+    // 7. True Raw Resources / Materials (Bit 1)
+    if(
+        string_pos("wood", _combined) > 0
+        || string_pos("madeira", _combined) > 0
+        || string_pos("log", _combined) > 0
+        || string_pos("tora", _combined) > 0
+        || string_pos("ore", _combined) > 0
+        || string_pos("minerio", _combined) > 0
+        || string_pos("stone", _combined) > 0
+        || string_pos("pedra", _combined) > 0
+        || string_pos("rock", _combined) > 0
+        || string_pos("rocha", _combined) > 0
+        || string_pos("ingot", _combined) > 0
+        || string_pos("lingote", _combined) > 0
+        || string_pos("bar", _combined) > 0
+        || string_pos("barra", _combined) > 0
+        || string_pos("fiber", _combined) > 0
+        || string_pos("fibra", _combined) > 0
+        || string_pos("crystal", _combined) > 0
+        || string_pos("cristal", _combined) > 0
+        || string_pos("obsidian", _combined) > 0
+        || string_pos("obsidiana", _combined) > 0
+        || string_pos("coal", _combined) > 0
+        || string_pos("carvao", _combined) > 0
+        || string_pos("slime", _combined) > 0
+        || string_pos("leather", _combined) > 0
+        || string_pos("couro", _combined) > 0
+        || string_pos("bone", _combined) > 0
+        || string_pos("osso", _combined) > 0
+        || string_pos("feather", _combined) > 0
+        || string_pos("pena", _combined) > 0
+        || string_pos("silk", _combined) > 0
+        || string_pos("seda", _combined) > 0
+        || string_pos("leaf", _combined) > 0
+        || string_pos("folha", _combined) > 0
+        || string_pos("leaves", _combined) > 0
+        || string_pos("herb", _combined) > 0
+        || string_pos("erva", _combined) > 0
+        || string_pos("shroom", _combined) > 0
+        || string_pos("cogumelo", _combined) > 0
+        || string_pos("mushroom", _combined) > 0
+        || string_pos("seed", _combined) > 0
+        || string_pos("semente", _combined) > 0
+        || string_pos("gem", _combined) > 0
+        || string_pos("gema", _combined) > 0
+        || string_pos("amethyst", _combined) > 0
+        || string_pos("ametista", _combined) > 0
+        || string_pos("ruby", _combined) > 0
+        || string_pos("rubi", _combined) > 0
+        || string_pos("sapphire", _combined) > 0
+        || string_pos("safira", _combined) > 0
+        || string_pos("diamond", _combined) > 0
+        || string_pos("diamante", _combined) > 0
+        || string_pos("emerald", _combined) > 0
+        || string_pos("esmeralda", _combined) > 0
+        || string_pos("amber", _combined) > 0
+        || string_pos("ambar", _combined) > 0
+        || string_pos("clay", _combined) > 0
+        || string_pos("argila", _combined) > 0
+        || string_pos("sand", _combined) > 0
+        || string_pos("areia", _combined) > 0
+        || string_pos("dirt", _combined) > 0
+        || string_pos("terra", _combined) > 0
+        || string_pos("resin", _combined) > 0
+        || string_pos("resina", _combined) > 0
+        || string_pos("chitin", _combined) > 0
+        || string_pos("quitina", _combined) > 0
+        || string_pos("scale", _combined) > 0
+        || string_pos("escama", _combined) > 0
+        || string_pos("hide", _combined) > 0
+        || string_pos("pele", _combined) > 0
+        || string_pos("meat", _combined) > 0
+        || string_pos("carne", _combined) > 0
+        || string_pos("powder", _combined) > 0
+        || string_pos("po", _combined) > 0
+        || string_pos("scrap", _combined) > 0
+        || string_pos("sucata", _combined) > 0
+        || string_pos("copper", _combined) > 0
+        || string_pos("cobre", _combined) > 0
+        || string_pos("iron", _combined) > 0
+        || string_pos("ferro", _combined) > 0
+        || string_pos("gold", _combined) > 0
+        || string_pos("ouro", _combined) > 0
+        || string_pos("silver", _combined) > 0
+        || string_pos("prata", _combined) > 0
+        || string_pos("titanium", _combined) > 0
+        || string_pos("titanio", _combined) > 0
+        || string_pos("branch", _combined) > 0
+        || string_pos("galho", _combined) > 0
+        || string_pos("twig", _combined) > 0
+        || string_pos("petal", _combined) > 0
+        || string_pos("petala", _combined) > 0
+        || string_pos("pollen", _combined) > 0
+        || string_pos("polen", _combined) > 0
+    )
+    {
+        return 1;
+    }
+
+    // Default for everything else (Scrolls, Keys, Maps, Recipes, Uncategorized Etc) -> Category 32 (Miscelânea)
+    return 32;
 }
 
 
@@ -1333,11 +1610,60 @@ function BO_ItemID(_item)
 
 function BO_ItemIsMovable(_item)
 {
-    return is_numeric(_item)
-        && ds_exists(_item, ds_type_map)
-        && ds_map_exists(_item, 6)
-        && is_numeric(_item[? 6])
-        && _item[? 6] >= 1;
+    if(!is_numeric(_item) || !ds_exists(_item, ds_type_map))
+        return false;
+
+    if(!ds_map_exists(_item, 6) || !is_numeric(_item[? 6]) || _item[? 6] < 1)
+        return false;
+
+    // Check direct padlock/favorite keys (truthy equality for 1 and true)
+    if(ds_map_exists(_item, "favorite") && (_item[? "favorite"] == 1 || _item[? "favorite"] == true))
+        return false;
+
+    if(ds_map_exists(_item, "favoriteItem") && (_item[? "favoriteItem"] == 1 || _item[? "favoriteItem"] == true))
+        return false;
+
+    if(ds_map_exists(_item, "is_favorite") && (_item[? "is_favorite"] == 1 || _item[? "is_favorite"] == true))
+        return false;
+
+    if(ds_map_exists(_item, "favorite_item") && (_item[? "favorite_item"] == 1 || _item[? "favorite_item"] == true))
+        return false;
+
+    if(ds_map_exists(_item, "locked") && (_item[? "locked"] == 1 || _item[? "locked"] == true))
+        return false;
+
+    if(ds_map_exists(_item, "is_locked") && (_item[? "is_locked"] == 1 || _item[? "is_locked"] == true))
+        return false;
+
+    if(ds_map_exists(_item, "IsLocked") && (_item[? "IsLocked"] == 1 || _item[? "IsLocked"] == true))
+        return false;
+
+    // Check all keys in ds_map
+    var _k = ds_map_find_first(_item);
+    while(!is_undefined(_k))
+    {
+        var _v = _item[? _k];
+        var _k_str = string_lower(string(_k));
+
+        if(
+            _k_str == "favorite"
+            || _k_str == "favoriteitem"
+            || _k_str == "fav"
+            || _k_str == "is_favorite"
+            || _k_str == "locked"
+            || _k_str == "is_locked"
+            || _k_str == "islocked"
+            || _k_str == "padlock"
+        )
+        {
+            if(_v == 1 || _v == true || _v == "1" || _v == "true")
+                return false;
+        }
+
+        _k = ds_map_find_next(_item, _k);
+    }
+
+    return true;
 }
 
 

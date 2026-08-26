@@ -1,10 +1,11 @@
 /*
-RealClock
-Tinkerlands Mod
-Author: Telles0808
+    ========================================================================
+    TINKERLANDS - RealClock
+    Author: Telles0808
+    ID: 5002
 
-Always displays the computer's local time in the native Clock style.
-The Clock accessory does not need to be equipped.
+    24-hour real local time HUD clock in native pixel font.
+    ========================================================================
 */
 
 OnWorldGenerationEnd(function()

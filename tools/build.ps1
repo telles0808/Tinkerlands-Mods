@@ -13,7 +13,10 @@ if (!(Test-Path $srcFile)) {
     exit 1
 }
 
-Write-Host "Compiling $ModName..." -ForegroundColor Cyan
+$modLower = $ModName.ToLower()
+$modFileName = "telles0808_$modLower.mod"
+
+Write-Host "Compiling $ModName as $modFileName..." -ForegroundColor Cyan
 
 $gml = Get-Content $srcFile -Raw -Encoding UTF8
 $encodedCode = $gml -replace '"', '%$%' -replace ',', '#$#' -replace "`r`n", '\n' -replace "`n", '\n' -replace "`r", '\n'
@@ -24,15 +27,27 @@ $exportScriptsDir = "$exportDir\scripts"
 if (Test-Path $exportDir) { Remove-Item $exportDir -Recurse -Force }
 New-Item -ItemType Directory -Path $exportScriptsDir -Force | Out-Null
 
+$modIdMap = @{
+    "Fog" = 5001;
+    "RealClock" = 5002;
+    "BO" = 5003;
+    "TomTom" = 5004
+}
+
+$modId = 5001
+if ($modIdMap.ContainsKey($ModName)) {
+    $modId = $modIdMap[$ModName]
+}
+
 $jsonExport = @"
 {
-	"id" : 5001,
-	"key" : "$ModName@$($ModName.ToLower())",
+	"id" : $modId,
+	"key" : "$ModName@$modLower",
 	"event" : "E_CS_EVENT.None",
 	"code" : "$encodedCode"
 }
 "@
-$jsonExport | Set-Content "$exportScriptsDir\$ModName@$($ModName.ToLower()).json" -Encoding UTF8
+$jsonExport | Set-Content "$exportScriptsDir\$ModName@$modLower.json" -Encoding UTF8
 
 $infoJson = @"
 {
@@ -54,12 +69,18 @@ Pop-Location
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 New-Item -ItemType Directory -Path $releasesDir -Force | Out-Null
 
-Copy-Item $tempZip "$distDir\$ModName.mod" -Force
-Copy-Item $tempZip "$releasesDir\$ModName.mod" -Force
+# Clean up any legacy files without telles0808_ in dist and releases
+Get-ChildItem -Path $distDir -Filter "*$modLower.mod" | Where-Object { $_.Name -notlike "telles0808_*" } | Remove-Item -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path $distDir -Filter "$ModName.mod" | Remove-Item -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path $releasesDir -Filter "*$modLower.mod" | Where-Object { $_.Name -notlike "telles0808_*" } | Remove-Item -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path $releasesDir -Filter "$ModName.mod" | Remove-Item -Force -ErrorAction SilentlyContinue
+
+Copy-Item $tempZip "$distDir\$modFileName" -Force
+Copy-Item $tempZip "$releasesDir\$modFileName" -Force
 Remove-Item $tempZip
 Remove-Item $exportDir -Recurse -Force
 
-Write-Host "Successfully compiled to $distDir\$ModName.mod and $releasesDir\$ModName.mod" -ForegroundColor Green
+Write-Host "Successfully compiled to $distDir\$modFileName and $releasesDir\$modFileName" -ForegroundColor Green
 
 if ($Deploy) {
     # 1. Check known Steam paths
@@ -91,8 +112,14 @@ if ($Deploy) {
     }
 
     if ($steamMods -and (Test-Path $steamMods)) {
-        Copy-Item "$distDir\$ModName.mod" "$steamMods\$($ModName.ToLower()).mod" -Force
-        Write-Host "Deployed to $steamMods\$($ModName.ToLower()).mod" -ForegroundColor Yellow
+        # Delete old legacy mod files without telles0808_
+        $legacy1 = Join-Path $steamMods "$modLower.mod"
+        $legacy2 = Join-Path $steamMods "$ModName.mod"
+        if (Test-Path $legacy1) { Remove-Item $legacy1 -Force -ErrorAction SilentlyContinue; Write-Host "Removed legacy mod: $legacy1" -ForegroundColor Yellow }
+        if (Test-Path $legacy2) { Remove-Item $legacy2 -Force -ErrorAction SilentlyContinue; Write-Host "Removed legacy mod: $legacy2" -ForegroundColor Yellow }
+
+        Copy-Item "$distDir\$modFileName" "$steamMods\$modFileName" -Force
+        Write-Host "Deployed to $steamMods\$modFileName" -ForegroundColor Green
     } else {
         Write-Host "Steam mods directory not found automatically. Please check candidate paths." -ForegroundColor DarkYellow
     }
