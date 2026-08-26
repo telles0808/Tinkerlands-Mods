@@ -76,11 +76,14 @@ When multiple entities (such as NPCs and nearby monsters) are in the same direct
 ## 📥 Installation
 
 1. Download [`telles0808_id5004_tomtom.mod`](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5004_tomtom.mod).
-2. Place `telles0808_id5004_tomtom.mod` inside your game mods folder:
+2. Locate your **Tinkerlands** installation folder:
    ```
    C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods\
    ```
-3. Launch Tinkerlands!
+3. **⚠️ (Recommended) Remove Old Versions:** Delete any older versions of `telles0808_id5004_tomtom.mod`, `TomTom.mod`, or legacy radar files from your `mods\` folder.
+4. Place `telles0808_id5004_tomtom.mod` inside your `mods\` folder.
+5. **💡 Clear Game Cache:** Delete all cached files inside `%LOCALAPPDATA%\Tinkerlands\temp`.
+6. Launch Tinkerlands!
 
 ---
 

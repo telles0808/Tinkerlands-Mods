@@ -12,7 +12,7 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 | :--- | :---: | :--- | :---: | :--- |
 | **[Fog](#-fog-id-5001)** | `5001` | Map surface translucency enhancer: renders explored fog of war with 95% opacity. | ✅ Stable | [⬇️ Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5001_fog.mod) |
 | **[RealClock](#-realclock-id-5002)** | `5002` | Real-world 24-hour local computer time in the top-right corner without needing the Clock accessory. | ✅ Stable | [⬇️ Download RealClock.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5002_realclock.mod) |
-| **[Better Organizer (BO)](#-better-organizer--bo-id-5003)** | `5003` | Chest automation & organization: 7-category filter bar with hotbar protection and persistent routing. | ✅ Stable | [⬇️ Download BO.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5003_bo.mod) |
+| **[Better Organizer](#-better-organizer-id-5003)** | `5003` | Chest automation & organization: 7-category filter bar with hotbar protection and persistent routing. | ✅ Stable | [⬇️ Download BO.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5003_bo.mod) |
 | **[TomTom](#-tomtom-id-5004)** | `5004` | Advanced GPS waypoint manager with interactive map pins, dual-layer radar, mob tracking, and automatic death tombstone pins. | ✅ Stable | [⬇️ Download TomTom.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5004_tomtom.mod) |
 
 ---
@@ -24,11 +24,12 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
    ```
    C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods\
    ```
-3. Paste the `.mod` file into the `mods` folder.
-4. **💡 (Recommended) Clear Game Cache:**
+3. **⚠️ (Recommended) Remove Old Mod Versions:** Delete any previous versions of the mod from your `mods\` folder to prevent conflicts.
+4. Paste the new `.mod` file into the `mods\` folder.
+5. **💡 Clear Game Cache:**
    * Press <kbd>Win</kbd> + <kbd>R</kbd>, type `%LOCALAPPDATA%\Tinkerlands\temp` and press **Enter**.
    * Delete any files inside the `temp` folder so the engine loads the new scripts immediately.
-5. Launch the game!
+6. Launch the game!
 
 ---
 
@@ -55,7 +56,7 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 
 ---
 
-### 📦 Better Organizer / BO (ID: 5003)
+### 📦 Better Organizer (ID: 5003)
 * **Interactive 7-Category Filter Bar:** Pinned seamlessly onto the top frame of opened containers.
 * **Two-Tier Priority Routing:** Fills incomplete piles first before claiming new slots.
 * **Hotbar Action Row Guard:** Active hotbar slots are never touched during deposits.
@@ -81,19 +82,6 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
   | ![Dual-Layer Radar Tracking](mods/TomTom/screenshot_radar_tracking.png) | ![Minimap Radar Mode](mods/TomTom/screenshot_minimap_radar_mode.png) | ![Map Waypoints & Death Pin](mods/TomTom/screenshot_map_death_pin.png) |
 
 * **Documentation & Source:** [mods/TomTom/README.md](mods/TomTom/README.md) • [mods/TomTom/src/telles0808_id5004_tomtom.gml](mods/TomTom/src/telles0808_id5004_tomtom.gml)
-
----
-
-## 🔨 Automated Build Scripts (`.cmd`)
-
-Each mod folder includes a 1-click Windows Command Script (`.cmd`) to compile, package, deploy to Steam, and clear the engine cache automatically:
-
-| Mod | 1-Click Script Path |
-| :--- | :--- |
-| **Fog** | [`mods/Fog/src/telles0808_id5001_fog.cmd`](mods/Fog/src/telles0808_id5001_fog.cmd) |
-| **RealClock** | [`mods/RealClock/src/telles0808_id5002_realclock.cmd`](mods/RealClock/src/telles0808_id5002_realclock.cmd) |
-| **Better Organizer** | [`mods/BO/src/telles0808_id5003_bo.cmd`](mods/BO/src/telles0808_id5003_bo.cmd) |
-| **TomTom** | [`mods/TomTom/src/telles0808_id5004_tomtom.cmd`](mods/TomTom/src/telles0808_id5004_tomtom.cmd) |
 
 ---
 
