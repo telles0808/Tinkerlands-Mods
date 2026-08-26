@@ -22,8 +22,8 @@ A lightweight, seamless map enhancement mod for **Tinkerlands** that provides cl
 
 ## 📥 Installation
 
-1. Download [`Fog.mod`](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Fog.mod).
-2. Place `Fog.mod` inside your game mods folder:
+1. Download [`telles0808_id5001_fog.mod`](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5001_fog.mod).
+2. Place `telles0808_id5001_fog.mod` inside your game mods folder:
    ```
    C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods\
    ```
@@ -34,4 +34,4 @@ A lightweight, seamless map enhancement mod for **Tinkerlands** that provides cl
 ## 🛠️ Technical Details
 
 * **Surface Hook:** Intercepts the minimap composite pass by adjusting the surface blend alpha channel before the final UI blit.
-* **Source Code:** [src/Fog.gml](src/Fog.gml)
+* **Source Code:** [src/telles0808_id5001_fog.gml](src/telles0808_id5001_fog.gml)

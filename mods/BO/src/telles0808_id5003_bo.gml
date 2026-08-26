@@ -3,8 +3,6 @@
     TINKERLANDS - Better Organizer (BO)
     Author: Telles0808
     ID: 5003
-
-    Interactive 7-channel chest filter bar & smart inventory deposit system.
     ========================================================================
 */
 

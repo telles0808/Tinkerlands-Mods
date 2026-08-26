@@ -3,8 +3,6 @@
     TINKERLANDS - Fog
     Author: Telles0808
     ID: 5001
-
-    Minimap fog translucency layer (95% visibility across explored areas).
     ========================================================================
 */
 

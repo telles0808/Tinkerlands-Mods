@@ -54,8 +54,8 @@ Each button on the chest filter bar corresponds to a binary bitmask evaluated ag
 
 ## 📥 Installation
 
-1. Download [`BO.mod`](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/BO.mod).
-2. Place `BO.mod` inside your game mods folder:
+1. Download [`telles0808_id5003_bo.mod`](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5003_bo.mod).
+2. Place `telles0808_id5003_bo.mod` inside your game mods folder:
    ```
    C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods\
    ```
@@ -67,4 +67,4 @@ Each button on the chest filter bar corresponds to a binary bitmask evaluated ag
 
 * **Native Callables:** Resolves `get_nearby_chest_containers`, `container_get_open`, `container_contains_item`, and `container_item_move` dynamically via `variable_global_get`.
 * **State Persistence:** Intercepts `OnWorldGenerationEnd` to load persisted bitmasks from disk into memory, with instant atomic file writes on every filter toggle.
-* **Source Code:** [src/BO.gml](src/BO.gml)
+* **Source Code:** [src/telles0808_id5003_bo.gml](src/telles0808_id5003_bo.gml)

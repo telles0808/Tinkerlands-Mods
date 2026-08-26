@@ -3,8 +3,6 @@
     TINKERLANDS - RealClock
     Author: Telles0808
     ID: 5002
-
-    24-hour real local time HUD clock in native pixel font.
     ========================================================================
 */
 

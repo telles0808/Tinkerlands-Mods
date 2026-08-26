@@ -3,8 +3,6 @@
     TINKERLANDS - TomTom
     Author: Telles0808
     ID: 5004
-
-    Integrated Sonar Radar (NPCs & Players) + Interactive Map Waypoints & HUD.
     ========================================================================
 */
 
@@ -770,19 +768,19 @@ function TomTom_DrawMapOverlay(_m)
             1
         );
 
-        // Exibe coordenadas (X, Y) abaixo do marcador
+        // Exibe coordenadas (X, Y) abaixo do marcador (+50% de escala: 1.65)
         var _tx = round(_p.map_x);
         var _ty = round(_p.map_y);
         var _coord_str = string(_tx) + ", " + string(_ty);
 
         GUI.DrawText(
             _psx,
-            _psy + 22 * _ratio,
+            _psy + 24 * _ratio,
             _coord_str,
             5,
             _is_sel ? c_yellow : c_white,
             1,
-            1.1 * _ratio
+            1.65 * _ratio
         );
     }
 
@@ -825,24 +823,44 @@ function TomTom_DrawMapOverlay(_m)
 }
 
 // ---------------------------------------------------------------------------
-// PLAYER COORDS (canto inferior direito)
+// PLAYER COORDS (canto inferior direito - estilo MapRadar / RealClock)
 // ---------------------------------------------------------------------------
 
 function TomTom_DrawPlayerCoords()
 {
-    if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER)) return;
-    if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0) return;
-    if(!instance_exists(objGUIIngameController)) return;
-    if(TomTom_PauseMenuOpen()) return;
+    if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER))
+        return;
+
+    if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0)
+        return;
+
+    if(!instance_exists(objGUIIngameController))
+        return;
+
+    if(TomTom_PauseMenuOpen())
+        return;
 
     var _ratio = TomTom_ScaleRatio();
-    var _tile  = TILE_SIZE > 0 ? TILE_SIZE : 16;
+    var _textScale = 3.0 * _ratio; // Mesmo padrão do RealClock
+
+    var _tile = TILE_SIZE;
+    if(_tile <= 0) _tile = 16;
+
+    var _px = round(MY_PLAYER.x / _tile);
+    var _py = round(MY_PLAYER.y / _tile);
+    var _coord_str = string(_px) + ", " + string(_py);
+
+    var _x = display_get_gui_width() - round(60 * _ratio);
+    var _y = display_get_gui_height() - round(50 * _ratio);
 
     GUI.DrawText(
-        display_get_gui_width()  - round(60 * _ratio),
-        display_get_gui_height() - round(50 * _ratio),
-        string(round(MY_PLAYER.x / _tile)) + ", " + string(round(MY_PLAYER.y / _tile)),
-        5, c_yellow, 1, 3.0 * _ratio
+        _x,
+        _y,
+        _coord_str,
+        5,
+        c_yellow,
+        1,
+        _textScale
     );
 }
 
@@ -951,7 +969,6 @@ function TomTom_Draw()
     if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0) return;
 
     TomTom_DrawButton(_m);
-    TomTom_DrawPlayerCoords();
 
     if(!_m.enabled)
         return;

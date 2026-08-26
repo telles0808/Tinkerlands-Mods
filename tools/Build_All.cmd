@@ -8,14 +8,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
     "$rootDir = Split-Path -Parent '%~dp0'.TrimEnd('\');" ^
     "$buildTool = Join-Path $rootDir 'tools\build.ps1';" ^
     "if (!(Test-Path $buildTool)) { Write-Error 'tools\build.ps1 nao encontrado!'; exit 1 };" ^
-    "Write-Host '--- 1/4: Compilando BO ---' -ForegroundColor Cyan;" ^
-    "& $buildTool -ModName 'BO' -Deploy;" ^
-    "Write-Host '--- 2/4: Compilando Radar ---' -ForegroundColor Cyan;" ^
-    "& $buildTool -ModName 'Radar' -Deploy;" ^
-    "Write-Host '--- 3/4: Compilando RealClock ---' -ForegroundColor Cyan;" ^
-    "& $buildTool -ModName 'RealClock' -Deploy;" ^
-    "Write-Host '--- 4/4: Compilando Fog ---' -ForegroundColor Cyan;" ^
+    "Write-Host '--- 1/4: Compilando Fog (ID: 5001) ---' -ForegroundColor Cyan;" ^
     "& $buildTool -ModName 'Fog' -Deploy;" ^
+    "Write-Host '--- 2/4: Compilando RealClock (ID: 5002) ---' -ForegroundColor Cyan;" ^
+    "& $buildTool -ModName 'RealClock' -Deploy;" ^
+    "Write-Host '--- 3/4: Compilando BO (ID: 5003) ---' -ForegroundColor Cyan;" ^
+    "& $buildTool -ModName 'BO' -Deploy;" ^
+    "Write-Host '--- 4/4: Compilando TomTom (ID: 5004) ---' -ForegroundColor Cyan;" ^
+    "& $buildTool -ModName 'TomTom' -Deploy;" ^
     "$packver = Join-Path $env:LOCALAPPDATA 'Tinkerlands\packver';" ^
     "if (Test-Path $packver) { $val = [int](Get-Content $packver -Raw).Trim(); Set-Content $packver ($val + 1); Write-Host ('Packver incrementado para: ' + ($val + 1)) -ForegroundColor Yellow };"
 

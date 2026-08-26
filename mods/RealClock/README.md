@@ -23,8 +23,8 @@ A clean, responsive, top-layer HUD mod for **Tinkerlands** that displays your co
 
 ## 📥 Installation
 
-1. Download [`RealClock.mod`](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/RealClock.mod).
-2. Place `RealClock.mod` inside your game mods folder:
+1. Download [`telles0808_id5002_realclock.mod`](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5002_realclock.mod).
+2. Place `telles0808_id5002_realclock.mod` inside your game mods folder:
    ```
    C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods\
    ```
@@ -34,8 +34,6 @@ A clean, responsive, top-layer HUD mod for **Tinkerlands** that displays your co
 
 ## 🛠️ Technical Details
 
-* **Engine Clock Hook:** Queries local machine time via GameMaker's native `date_current_datetime()`, `date_get_hour()`, and `date_get_minute()` routines.
-* **Render Pipeline:** Rendered through `GUI.DrawText` during `ModInstance` GUI draw stages with dynamic coordinate anchoring:
-  $$\text{X} = \text{display\_get\_gui\_width}() - 75 \times \text{scale}$$
-  $$\text{Y} = 15 \times \text{scale}$$
-* **Source Code:** [src/RealClock.gml](src/RealClock.gml)
+* **Topmost Draw Layer:** Renders in `OnModDrawGUIEnd` after the native in-game GUI controllers.
+* **Aspect-Ratio Scaling:** Scales with `display_get_gui_height() / 1080.0`.
+* **Source Code:** [src/telles0808_id5002_realclock.gml](src/telles0808_id5002_realclock.gml)

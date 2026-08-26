@@ -1,5 +1,5 @@
 param(
-    [string]$ModName = "Radar",
+    [string]$ModName = "TomTom",
     [switch]$Deploy = $false
 )
 
@@ -14,9 +14,23 @@ if (!(Test-Path $srcFile)) {
 }
 
 $modLower = $ModName.ToLower()
-$modFileName = "telles0808_$modLower.mod"
 
-Write-Host "Compiling $ModName as $modFileName..." -ForegroundColor Cyan
+$modIdMap = @{
+    "Fog" = 5001;
+    "RealClock" = 5002;
+    "BO" = 5003;
+    "TomTom" = 5004
+}
+
+$modId = 5004
+if ($modIdMap.ContainsKey($ModName)) {
+    $modId = $modIdMap[$ModName]
+}
+
+$modKey = "telles0808_id$($modId)_$modLower"
+$modFileName = "$modKey.mod"
+
+Write-Host "Compiling $ModName as $modFileName (ID: $modId)..." -ForegroundColor Cyan
 
 $gml = Get-Content $srcFile -Raw -Encoding UTF8
 $encodedCode = $gml -replace '"', '%$%' -replace ',', '#$#' -replace "`r`n", '\n' -replace "`n", '\n' -replace "`r", '\n'
@@ -27,31 +41,19 @@ $exportScriptsDir = "$exportDir\scripts"
 if (Test-Path $exportDir) { Remove-Item $exportDir -Recurse -Force }
 New-Item -ItemType Directory -Path $exportScriptsDir -Force | Out-Null
 
-$modIdMap = @{
-    "Fog" = 5001;
-    "RealClock" = 5002;
-    "BO" = 5003;
-    "TomTom" = 5004
-}
-
-$modId = 5001
-if ($modIdMap.ContainsKey($ModName)) {
-    $modId = $modIdMap[$ModName]
-}
-
 $jsonExport = @"
 {
 	"id" : $modId,
-	"key" : "$ModName@$modLower",
+	"key" : "$modKey",
 	"event" : "E_CS_EVENT.None",
 	"code" : "$encodedCode"
 }
 "@
-$jsonExport | Set-Content "$exportScriptsDir\$ModName@$modLower.json" -Encoding UTF8
+$jsonExport | Set-Content "$exportScriptsDir\$modKey.json" -Encoding UTF8
 
 $infoJson = @"
 {
-	"name" : "$ModName",
+	"name" : "$modKey",
 	"author" : "Telles0808",
 	"version" : "1.0.0",
 	"description" : "$ModName mod for Tinkerlands"
@@ -69,21 +71,16 @@ Pop-Location
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 New-Item -ItemType Directory -Path $releasesDir -Force | Out-Null
 
-# Clean up any legacy files without telles0808_ in dist and releases
-Get-ChildItem -Path $distDir -Filter "*$modLower.mod" | Where-Object { $_.Name -notlike "telles0808_*" } | Remove-Item -Force -ErrorAction SilentlyContinue
-Get-ChildItem -Path $distDir -Filter "$ModName.mod" | Remove-Item -Force -ErrorAction SilentlyContinue
-Get-ChildItem -Path $releasesDir -Filter "*$modLower.mod" | Where-Object { $_.Name -notlike "telles0808_*" } | Remove-Item -Force -ErrorAction SilentlyContinue
-Get-ChildItem -Path $releasesDir -Filter "$ModName.mod" | Remove-Item -Force -ErrorAction SilentlyContinue
-
 Copy-Item $tempZip "$distDir\$modFileName" -Force
+Copy-Item $tempZip "$distDir\$ModName.mod" -Force
 Copy-Item $tempZip "$releasesDir\$modFileName" -Force
-Remove-Item $tempZip
+Copy-Item $tempZip "$releasesDir\$ModName.mod" -Force
+Remove-Item $tempZip -Force
 Remove-Item $exportDir -Recurse -Force
 
 Write-Host "Successfully compiled to $distDir\$modFileName and $releasesDir\$modFileName" -ForegroundColor Green
 
 if ($Deploy) {
-    # 1. Check known Steam paths
     $candidatePaths = @(
         "C:\Games\Steam\steamapps\common\Tinkerlands\mods",
         "C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods",
@@ -100,7 +97,6 @@ if ($Deploy) {
         }
     }
 
-    # 2. Check Steam registry if still not found
     if (!$steamMods) {
         try {
             $steamReg = Get-ItemProperty -Path "HKCU:\Software\Valve\Steam" -ErrorAction SilentlyContinue
@@ -112,12 +108,6 @@ if ($Deploy) {
     }
 
     if ($steamMods -and (Test-Path $steamMods)) {
-        # Delete old legacy mod files without telles0808_
-        $legacy1 = Join-Path $steamMods "$modLower.mod"
-        $legacy2 = Join-Path $steamMods "$ModName.mod"
-        if (Test-Path $legacy1) { Remove-Item $legacy1 -Force -ErrorAction SilentlyContinue; Write-Host "Removed legacy mod: $legacy1" -ForegroundColor Yellow }
-        if (Test-Path $legacy2) { Remove-Item $legacy2 -Force -ErrorAction SilentlyContinue; Write-Host "Removed legacy mod: $legacy2" -ForegroundColor Yellow }
-
         Copy-Item "$distDir\$modFileName" "$steamMods\$modFileName" -Force
         Write-Host "Deployed to $steamMods\$modFileName" -ForegroundColor Green
     } else {

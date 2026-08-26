@@ -11,12 +11,12 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 
 ## 📦 Available Mods
 
-| Mod | Description | Status | Download |
-| :--- | :--- | :---: | :---: |
-| **[Better Organizer (v1.0)](#-better-organizer-bo-v10)** | Smart inventory deposit system with interactive 7-channel chest filter bars, category routing, and hotbar protection. | ✅ Stable | [⬇️ Download BO.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/BO.mod) |
-| **[TomTom (v1.0)](#-tomtom-v10)** | Integrated navigation suite with live Sonar radar (NPCs & Players), interactive fullscreen map pins, and GPS HUD coordinates. | ✅ Stable | [⬇️ Download TomTom.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/TomTom.mod) |
-| **[RealClock (v1.0)](#-realclock-v10)** | Displays the computer's real local time in a responsive 24-hour HUD clock without requiring the Clock accessory. | ✅ Stable | [⬇️ Download RealClock.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/RealClock.mod) |
-| **[Fog (v1.0)](#-fog-v10)** | Modifies the minimap fog layer to provide 95% translucent visibility across explored areas. | ✅ Stable | [⬇️ Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/Fog.mod) |
+| Mod | ID | Description | Status | Download |
+| :--- | :---: | :--- | :---: | :---: |
+| **[Fog (v1.0)](#-fog-id-5001-v10)** | `5001` | Modifies the minimap fog layer to provide 95% translucent visibility across explored areas. | ✅ Stable | [⬇️ Download telles0808_id5001_fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5001_fog.mod) |
+| **[RealClock (v1.0)](#-realclock-id-5002-v10)** | `5002` | Displays the computer's real local time in a responsive 24-hour HUD clock without requiring the Clock accessory. | ✅ Stable | [⬇️ Download telles0808_id5002_realclock.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5002_realclock.mod) |
+| **[Better Organizer / BO (v1.0)](#-better-organizer--bo-id-5003-v10)** | `5003` | Smart inventory deposit system with interactive 7-channel chest filter bars, category routing, and hotbar protection. | ✅ Stable | [⬇️ Download telles0808_id5003_bo.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5003_bo.mod) |
+| **[TomTom (v1.4)](#-tomtom-id-5004-v14)** | `5004` | Unified GPS waypoint and entity tracker: drag-and-drop map pins (📍📦❓💀) with coordinates, Sonar HUD button, and dynamic off-screen directional radar for NPCs, players, and pins. | ✅ Stable | [⬇️ Download telles0808_id5004_tomtom.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5004_tomtom.mod) |
 
 ---
 
@@ -38,7 +38,32 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 
 ## 🛠️ Mod Details
 
-### 📦 Better Organizer / BO (v1.0)
+### 🌫️ Fog (ID: 5001, v1.0)
+* **Enhanced Exploration:** Adjusts the alpha channel on the minimap surface, rendering the explored map with 95% translucency.
+* **Seamless Surface Hook:** Hooks directly into `MINIMAP.render_surface` without interfering with game saves or world generation.
+* **Preview:**
+
+  ![Fog Mod Preview](mods/Fog/preview.png)
+
+* **Documentation & Source:** [mods/Fog/README.md](mods/Fog/README.md) • [mods/Fog/src/telles0808_id5001_fog.gml](mods/Fog/src/telles0808_id5001_fog.gml)
+
+---
+
+### 🕒 RealClock (ID: 5002, v1.0)
+* **Real Local Time:** Displays the computer's current time in 24-hour `HH:MM` format instead of the in-game day cycle.
+* **No Accessory Required:** Remains available without equipping the Clock accessory.
+* **Native HUD Style:** Uses Tinkerlands' embedded pixel font with high-visibility yellow text.
+* **Responsive Placement:** Scales from a 1920×1080 reference area and stays anchored to the top-right corner across all resolutions.
+* **Topmost Draw Layer:** Renders on top of the native GUI so the minimap cannot cover it.
+* **Preview:**
+
+  ![RealClock Preview](mods/RealClock/preview.png)
+
+* **Documentation & Source:** [mods/RealClock/README.md](mods/RealClock/README.md) • [mods/RealClock/src/telles0808_id5002_realclock.gml](mods/RealClock/src/telles0808_id5002_realclock.gml)
+
+---
+
+### 📦 Better Organizer / BO (ID: 5003, v1.0)
 * **Interactive 7-Category Filter Bar:** Pinned seamlessly onto the top frame of any opened chest (standard or astral).
 * **Two-Tier Priority Routing:** Fills existing incomplete piles first before claiming new chest slots.
 * **Hotbar Action Row Guard:** Row 0 (active inventory action slots) is never touched during automatic deposits.
@@ -49,52 +74,22 @@ A personal collection of high-quality, lightweight, and performance-driven Quali
 
   ![Better Organizer Preview](mods/BO/preview.png)
 
-* **Documentation & Source:** [mods/BO/README.md](mods/BO/README.md) • [mods/BO/src/BO.gml](mods/BO/src/BO.gml)
+* **Documentation & Source:** [mods/BO/README.md](mods/BO/README.md) • [mods/BO/src/telles0808_id5003_bo.gml](mods/BO/src/telles0808_id5003_bo.gml)
 
 ---
 
-### 🧭 TomTom (v1.0)
-* **Dynamic Off-Screen Sonar Radar:** Projects directional arrows with character portraits and live distance meters for all NPCs and online players on the island.
-* **In-Screen Entity Identification:** Displays NPC portraits and names directly above entities within your field of view.
-* **On/Off Sonar Toggle Button:** Integrated cleanly on the HUD below the minimap (click the Sonar icon to toggle).
-* **Interactive Map Waypoints (Pins):**
-  * 4 pin types: Waypoint (📍), Storage (📦), Question Mark (❓), Boss / Danger (💀).
-  * Drag & Drop from top-left palette onto any map coordinate.
-  * Drag to reposition existing pins on the map.
-  * Drag pins onto the glowing top-left trash bin to delete.
-  * Dynamic in-game TomTom guidance: All active pins project arrows, icons, and distance on the game screen.
-  * Displays precise tile coordinates `(X, Y)` below every placed pin.
-* **Player GPS Coordinates:** Always displays your current player coordinates in the bottom-right corner.
+### 🧭 TomTom (ID: 5004, v1.4)
+* **Interactive Map Pins:** Drag 4 types of custom markers (📍 Waypoint, 📦 Storage, ❓ Interest, 💀 Boss) from the palette to the fullscreen map.
+* **Coordinate Labels:** Displays live tile coordinates `(X, Y)` beneath each pin placed on the map canvas.
+* **Illuminated Trash Bin:** Drag any placed pin into the glowing trash icon to delete it.
+* **Dynamic TomTom Radar:** Off-screen directional arrows with NPC portraits, multiplayer names, and pin icons plus distance in meters (`Xm`).
+* **Sonar HUD Toggle:** One-click Sonar accessory button below the minimap to toggle radar visibility.
+* **Bottom-Right Coordinates:** High-visibility real-time `(X, Y)` player position matching the RealClock HUD theme.
 * **Preview:**
 
   ![TomTom Preview](mods/TomTom/preview.png)
 
-* **Documentation & Source:** [mods/TomTom/README.md](mods/TomTom/README.md) • [mods/TomTom/src/TomTom.gml](mods/TomTom/src/TomTom.gml)
-
----
-
-### 🕒 RealClock (v1.0)
-* **Real Local Time:** Displays the computer's current time in 24-hour `HH:MM` format instead of the in-game day cycle.
-* **No Accessory Required:** Remains available without equipping the Clock accessory.
-* **Native HUD Style:** Uses Tinkerlands' embedded pixel font with high-visibility yellow text.
-* **Responsive Placement:** Scales from a 1920×1080 reference area and stays anchored to the top-right corner across all resolutions.
-* **Topmost Draw Layer:** Renders on top of the native GUI so the minimap cannot cover it.
-* **Preview:**
-
-  ![RealClock Preview](mods/RealClock/preview.png)
-
-* **Documentation & Source:** [mods/RealClock/README.md](mods/RealClock/README.md) • [mods/RealClock/src/RealClock.gml](mods/RealClock/src/RealClock.gml)
-
----
-
-### 🌫️ Fog (v1.0)
-* **Enhanced Exploration:** Adjusts the alpha channel on the minimap surface, rendering the explored map with 95% translucency.
-* **Seamless:** Hooks directly into `MINIMAP.render_surface` without interfering with game saves or world generation.
-* **Preview:**
-
-  ![Fog Mod Preview](mods/Fog/preview.png)
-
-* **Documentation & Source:** [mods/Fog/README.md](mods/Fog/README.md) • [mods/Fog/src/Fog.gml](mods/Fog/src/Fog.gml)
+* **Documentation & Source:** [mods/TomTom/README.md](mods/TomTom/README.md) • [mods/TomTom/src/telles0808_id5004_tomtom.gml](mods/TomTom/src/telles0808_id5004_tomtom.gml)
 
 ---
 
@@ -110,14 +105,13 @@ For developers and modders looking to understand Tinkerlands' engine variables, 
 
 Each mod directory contains a ready-to-run Windows Command Script (`.cmd`) located right alongside its source file:
 
-| Mod | 1-Click Script Path | What It Does |
-| :--- | :--- | :--- |
-| **Better Organizer** | `mods/BO/Build_BO.cmd` | Compiles `BO.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ clears game cache. |
-| **TomTom** | `mods/TomTom/Build_TomTom.cmd` | Compiles `TomTom.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ clears game cache. |
-| **RealClock** | `mods/RealClock/Build_RealClock.cmd` | Compiles `RealClock.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ clears game cache. |
-| **Fog** | `mods/Fog/Build_Fog.cmd` | Compiles `Fog.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ clears game cache. |
-
-Simply **double-click** the `.cmd` file to execute the complete build, packaging, hot-reload, and cache-clearing pipeline automatically!
+| Mod | ID | 1-Click Script Path | What It Does |
+| :--- | :---: | :--- | :--- |
+| **Fog** | `5001` | `mods/Fog/src/telles0808_id5001_fog.cmd` | Compiles `telles0808_id5001_fog.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **RealClock** | `5002` | `mods/RealClock/src/telles0808_id5002_realclock.cmd` | Compiles `telles0808_id5002_realclock.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **Better Organizer** | `5003` | `mods/BO/src/telles0808_id5003_bo.cmd` | Compiles `telles0808_id5003_bo.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **TomTom** | `5004` | `mods/TomTom/src/telles0808_id5004_tomtom.cmd` | Compiles `telles0808_id5004_tomtom.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **All Mods** | — | `tools/Build_All.cmd` | Compiles and deploys all 4 mods sequentially in a single click. |
 
 ---
 
