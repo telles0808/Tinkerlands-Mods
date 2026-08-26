@@ -85,6 +85,27 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 
 ---
 
+## 📖 Technical Documentation
+For developers and modders looking to understand Tinkerlands' engine variables, lifecycle hooks, and NPC architecture:
+* 📄 **[Tinkerlands Modding & Engine Reference Guide](MODDING_GUIDE.md):** Detailed guide on GML mod packaging, global variables, lifecycle events, $O(1)$ `npcID` resolution, container hooks, and minimap rendering.
+
+---
+
+## 🔨 Building from Source & 1-Click `.cmd` Scripts
+
+### ⚡ 1-Click Automated Build Scripts (`.cmd`)
+
+Each mod directory contains a ready-to-run Windows Command Script (`.cmd`) located right alongside its source file:
+
+| Mod | ID | 1-Click Script Path | What It Does |
+| :--- | :---: | :--- | :--- |
+| **Fog** | `5001` | `mods/Fog/src/telles0808_id5001_fog.cmd` | Compiles `telles0808_id5001_fog.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **RealClock** | `5002` | `mods/RealClock/src/telles0808_id5002_realclock.cmd` | Compiles `telles0808_id5002_realclock.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **Better Organizer** | `5003` | `mods/BO/src/telles0808_id5003_bo.cmd` | Compiles `telles0808_id5003_bo.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| **TomTom** | `5004` | `mods/TomTom/src/telles0808_id5004_tomtom.cmd` | Compiles `telles0808_id5004_tomtom.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
