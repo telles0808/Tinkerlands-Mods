@@ -91,18 +91,16 @@ For developers and modders looking to understand Tinkerlands' engine variables, 
 
 ---
 
-## 🔨 Building from Source & 1-Click `.cmd` Scripts
+## 🔨 Automated Build Scripts (`.cmd`)
 
-### ⚡ 1-Click Automated Build Scripts (`.cmd`)
+Each mod folder includes a 1-click Windows Command Script (`.cmd`) to compile, package, deploy to Steam, and clear the engine cache automatically:
 
-Each mod directory contains a ready-to-run Windows Command Script (`.cmd`) located right alongside its source file:
-
-| Mod | ID | 1-Click Script Path | What It Does |
-| :--- | :---: | :--- | :--- |
-| **Fog** | `5001` | `mods/Fog/src/telles0808_id5001_fog.cmd` | Compiles `telles0808_id5001_fog.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
-| **RealClock** | `5002` | `mods/RealClock/src/telles0808_id5002_realclock.cmd` | Compiles `telles0808_id5002_realclock.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
-| **Better Organizer** | `5003` | `mods/BO/src/telles0808_id5003_bo.cmd` | Compiles `telles0808_id5003_bo.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
-| **TomTom** | `5004` | `mods/TomTom/src/telles0808_id5004_tomtom.cmd` | Compiles `telles0808_id5004_tomtom.gml` ➔ builds `.mod` ➔ deploys to Steam ➔ increments `packver` ➔ clears game cache. |
+| Mod | 1-Click Script Path |
+| :--- | :--- |
+| **Fog** | [`mods/Fog/src/telles0808_id5001_fog.cmd`](mods/Fog/src/telles0808_id5001_fog.cmd) |
+| **RealClock** | [`mods/RealClock/src/telles0808_id5002_realclock.cmd`](mods/RealClock/src/telles0808_id5002_realclock.cmd) |
+| **Better Organizer** | [`mods/BO/src/telles0808_id5003_bo.cmd`](mods/BO/src/telles0808_id5003_bo.cmd) |
+| **TomTom** | [`mods/TomTom/src/telles0808_id5004_tomtom.cmd`](mods/TomTom/src/telles0808_id5004_tomtom.cmd) |
 
 ---
 
