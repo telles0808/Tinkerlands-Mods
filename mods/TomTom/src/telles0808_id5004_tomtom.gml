@@ -17,10 +17,13 @@ OnIslandArrive(function()
     if(_m != undefined)
     {
         _m.npcs        = [];
+        _m.mobs        = [];
+        _m.chests      = [];
         _m.scan        = true;
         _m.last_region = undefined;
         _m.map_open    = false;
         _m.drag_active = false;
+        TomTom_EnsureDefaults(_m);
         TomTom_LoadPins(_m);
     }
 });
@@ -43,12 +46,15 @@ OnWorldGenerationEnd(function()
     else
     {
         _m.npcs        = [];
+        _m.mobs        = [];
+        _m.chests      = [];
         _m.scan        = true;
         _m.last_region = undefined;
         _m.map_open    = false;
         _m.drag_active = false;
         _m.cutscenePlaying      = TomTom_GetCallable("cutscene_is_playing");
         _m.cutscenePlayingOther = TomTom_GetCallable("cutscene_is_playing_except_player");
+        TomTom_EnsureDefaults(_m);
         TomTom_LoadPins(_m);
     }
 });
@@ -68,22 +74,65 @@ OnModDrawGUIEnd(function()
         {
             TomTom_DrawMapOverlay(_m);
         }
+        else if(TomTom_HUDVisible() && !_m.radar_mode)
+        {
+            // No Modo Minimapa (Cinza), desenha os alvos no topo do Minimapa
+            TomTom_DrawMinimapRadar(_m);
+        }
 
         TomTom_DrawPlayerCoords();
     }
 });
 
 // ---------------------------------------------------------------------------
-// CREATE
+// CREATE & DEFAULTS
 // ---------------------------------------------------------------------------
+
+function TomTom_SafeSprite(_name, _fallback)
+{
+    if(variable_global_exists(_name))
+    {
+        var _val = variable_global_get(_name);
+        if(is_numeric(_val) && sprite_exists(_val))
+            return _val;
+    }
+    var _idx = asset_get_index(_name);
+    if(_idx >= 0 && sprite_exists(_idx))
+        return _idx;
+
+    return _fallback;
+}
+
+function TomTom_EnsureDefaults(_m)
+{
+    if(_m == undefined) return;
+    if(!variable_instance_exists(_m, "radar_mode"))       _m.radar_mode       = true;
+    if(!variable_instance_exists(_m, "track_npcs"))       _m.track_npcs       = true;
+    if(!variable_instance_exists(_m, "track_chests"))     _m.track_chests     = true;
+    if(!variable_instance_exists(_m, "track_mobs"))       _m.track_mobs       = true;
+    if(!variable_instance_exists(_m, "player_was_alive")) _m.player_was_alive = true;
+    if(!variable_instance_exists(_m, "npcs"))             _m.npcs             = [];
+    if(!variable_instance_exists(_m, "mobs"))             _m.mobs             = [];
+    if(!variable_instance_exists(_m, "chests"))           _m.chests           = [];
+}
 
 function TomTom_Create()
 {
-    // Sonar & Radar
+    // Sonar & Radar States
+    radar_mode           = true;  // true = Screen Edge TomTom (Colorido), false = Minimap GPS (Cinza)
+    track_npcs           = true;  // 👤 NPCs / Players
+    track_chests         = true;  // 📦 Baús & Pins de Mapa
+    track_mobs           = true;  // 👹 Mobs / Monstros / Bosses (Goblin)
+
+    player_was_alive     = true;  // Monitora morte para gerar pin automático de lápide/caixão
+
     npcs                 = [];
+    mobs                 = [];
+    chests               = [];
     scan                 = true;
-    enabled              = true;
     tick                 = 0;
+    mob_tick             = 0;
+    chest_tick           = 0;
     last_region          = undefined;
     cutscenePlaying      = TomTom_GetCallable("cutscene_is_playing");
     cutscenePlayingOther = TomTom_GetCallable("cutscene_is_playing_except_player");
@@ -199,7 +248,7 @@ function TomTom_HUDVisible()
 }
 
 // ---------------------------------------------------------------------------
-// PIN SPRITES (0=POI 1=Storage 2=Question 3=Boss)
+// PIN SPRITES (0=POI, 1=Storage, 2=Question, 3=Boss, 4=Death/Lápide)
 // ---------------------------------------------------------------------------
 
 function TomTom_PinSprite(_type)
@@ -210,6 +259,7 @@ function TomTom_PinSprite(_type)
         case 1: return sprGUIIngameIconStorage;       // 📦 Storage
         case 2: return sprGUIIngameIconQuestionMark;  // ❓ Question Mark
         case 3: return sprGUIIngameIconBoss;          // 💀 Boss
+        case 4: return sprTombStone;                  // 🪦 Lápide (Death Pin direto)
     }
     return sprGUIIngameIconPOI;
 }
@@ -280,7 +330,7 @@ function TomTom_InProtectedHeaderZone(_mx, _my)
 }
 
 // ---------------------------------------------------------------------------
-// NPC RADAR
+// NPC & MOB RESOLUTION
 // ---------------------------------------------------------------------------
 
 function TomTom_NPCAdd(_npc)
@@ -388,6 +438,67 @@ function TomTom_GetPortrait(_npc)
     return -1;
 }
 
+function TomTom_GetMobName(_mob)
+{
+    if(variable_instance_exists(_mob, "name") && TomTom_ValidName(_mob.name)) return string(_mob.name);
+    if(variable_instance_exists(_mob, "mobName") && TomTom_ValidName(_mob.mobName)) return string(_mob.mobName);
+    if(variable_instance_exists(_mob, "refMob") && TomTom_ValidName(_mob.refMob)) return string(_mob.refMob);
+
+    if(variable_instance_exists(_mob, "mobID"))
+    {
+        var _mid = _mob.mobID;
+        switch(_mid)
+        {
+            case 1:   return "Purple Toad";
+            case 2:   return "Swamp Thing";
+            case 3:   return "Flying Eye";
+            case 7:   return "Butterfly";
+            case 8:   return "Butterfly";
+            case 9:   return "Butterfly";
+            case 10:  return "Butterfly";
+            case 11:  return "Butterfly";
+            case 12:  return "Butterfly";
+            case 13:  return "Mineral Spider";
+            case 14:  return "Crystal Slime";
+            case 19:  return "Shooting Flower";
+            case 22:  return "Mini Spider";
+            case 24:  return "Green Slime";
+            case 25:  return "Blue Slime";
+            case 26:  return "Red Slime";
+            case 28:  return "Yellow Slime";
+            case 37:  return "Angry Cactus";
+            case 38:  return "Corsair Skeleton";
+            case 39:  return "Pirate Skeleton";
+            case 43:  return "Mummy";
+            case 47:  return "Firefly";
+            case 49:  return "Orc";
+            case 50:  return "Red Crab";
+            case 54:  return "Scorpion";
+            case 55:  return "Winter Wolf";
+            case 56:  return "Frog Prince";
+            case 60:  return "Leech";
+            case 61:  return "Golem";
+            case 62:  return "Yeti";
+            case 63:  return "Bat";
+            case 66:  return "Slime King";
+            case 67:  return "Monkey";
+            case 70:  return "Rat";
+            case 74:  return "Crotalus";
+            case 75:  return "Quetzalcoatl";
+            case 76:  return "Crocodile";
+            case 78:  return "Dragonfly";
+            case 80:  return "Maneater";
+            case 84:  return "Necromancer";
+            case 87:  return "Vampire";
+            case 144: return "Bee";
+            case 145: return "Rabbit";
+            case 182: return "Goblin";
+            case 187: return "Blue Crab";
+        }
+    }
+    return "Monster";
+}
+
 function TomTom_GetPlayerName(_player)
 {
     if(variable_instance_exists(_player, "playerName"))
@@ -418,7 +529,38 @@ function TomTom_Update()
     if(_m == undefined) return;
 
     if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER)) return;
-    if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0) return;
+
+    TomTom_EnsureDefaults(_m);
+
+    // 0. Detecção de Morte do Jogador (Gera Pin de Morte automático no local)
+    var _is_alive = true;
+    if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0)
+        _is_alive = false;
+
+    if(_m.player_was_alive && !_is_alive)
+    {
+        _m.player_was_alive = false;
+
+        var _tile = TILE_SIZE > 0 ? TILE_SIZE : 16;
+        var _death_map_x = MY_PLAYER.x / _tile;
+        var _death_map_y = MY_PLAYER.y / _tile;
+
+        // Auto-cria o Pin de Morte (Tipo 4 = Lápide / Caixão) no ponto exato da morte
+        array_push(_m.pins, {
+            map_x: _death_map_x,
+            map_y: _death_map_y,
+            type:  4
+        });
+
+        TomTom_SavePins(_m);
+    }
+    else if(!_m.player_was_alive && _is_alive)
+    {
+        // Jogador renasceu / respawnou
+        _m.player_was_alive = true;
+    }
+
+    if(!_is_alive) return;
 
     // 1. NPC Scanning / Cleanup
     var _curr_reg = variable_instance_exists(MY_PLAYER, "netRegion")
@@ -429,6 +571,8 @@ function TomTom_Update()
     {
         _m.last_region = _curr_reg;
         _m.npcs        = [];
+        _m.mobs        = [];
+        _m.chests      = [];
         _m.scan        = true;
     }
 
@@ -482,14 +626,113 @@ function TomTom_Update()
         }
     }
 
-    // 2. Sonar Button (only when HUD is visible and map is not open)
+    // 2. Mob & Animal Scanning
+    if(_m.track_mobs)
+    {
+        _m.mob_tick++;
+        if(_m.mob_tick >= 10)
+        {
+            _m.mob_tick = 0;
+            _m.mobs = [];
+
+            var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
+            var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
+            var _def_gob   = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+
+            var _mob_count = instance_number(objMob);
+            for(var mi = 0; mi < _mob_count; mi++)
+            {
+                var _minst = instance_find(objMob, mi);
+                if(!instance_exists(_minst)) continue;
+                if(_minst == MY_PLAYER) continue;
+
+                // Não duplica NPCs que herdam de objMob
+                if(variable_instance_exists(_minst, "npcID") && is_numeric(_minst.npcID) && _minst.npcID >= 0)
+                    continue;
+                if(variable_instance_exists(_minst, "refNPC"))
+                    continue;
+                if(variable_instance_exists(_minst, "mobID") && _minst.mobID == 18)
+                    continue;
+
+                if(_has_p_reg && variable_instance_exists(_minst, "netRegion"))
+                {
+                    if(variable_instance_get(_minst, "netRegion") != _p_reg)
+                        continue;
+                }
+
+                if(variable_instance_exists(_minst, "visible") && !_minst.visible)
+                    continue;
+
+                var _mname = TomTom_GetMobName(_minst);
+                var _mspr  = (variable_instance_exists(_minst, "sprite_index") && sprite_exists(_minst.sprite_index))
+                             ? _minst.sprite_index
+                             : _def_gob;
+
+                array_push(_m.mobs, {
+                    inst:   _minst,
+                    x:      _minst.x,
+                    y:      _minst.y,
+                    sprite: _mspr,
+                    name:   _mname
+                });
+            }
+        }
+    }
+
+    // 3. Chest / Baú Scanning no Mundo
+    if(_m.track_chests)
+    {
+        _m.chest_tick++;
+        if(_m.chest_tick >= 20)
+        {
+            _m.chest_tick = 0;
+            _m.chests = [];
+
+            var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
+            var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
+
+            var _chest_names = ["objInteractableChest", "objChest", "objContainer", "objInteractableStorage"];
+            for(var cn = 0; cn < array_length(_chest_names); cn++)
+            {
+                var _casset = asset_get_index(_chest_names[cn]);
+                if(_casset >= 0)
+                {
+                    var _ccount = instance_number(_casset);
+                    for(var c = 0; c < _ccount; c++)
+                    {
+                        var _cinst = instance_find(_casset, c);
+                        if(!instance_exists(_cinst)) continue;
+
+                        if(_has_p_reg && variable_instance_exists(_cinst, "netRegion"))
+                        {
+                            if(variable_instance_get(_cinst, "netRegion") != _p_reg)
+                                continue;
+                        }
+
+                        if(variable_instance_exists(_cinst, "visible") && !_cinst.visible)
+                            continue;
+
+                        var _cspr = variable_instance_exists(_cinst, "sprite_index") ? _cinst.sprite_index : sprGUIIngameIconStorage;
+
+                        array_push(_m.chests, {
+                            inst:   _cinst,
+                            x:      _cinst.x,
+                            y:      _cinst.y,
+                            sprite: _cspr
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Radar HUD Button & Mini Badges Input (apenas quando HUD visível e mapa fechado)
     if(TomTom_HUDVisible() && !_m.map_open)
     {
         TomTom_ButtonInput(_m);
     }
 
-    // 3. Map toggle logic
-    // Se o menu geral de pausa (ESC) estiver aberto, fecha o mapa e cancela ações
+    // 5. Map toggle logic
     if(TomTom_PauseMenuOpen())
     {
         _m.map_open     = false;
@@ -511,7 +754,7 @@ function TomTom_Update()
     if(variable_global_exists("K_MAP_PRESSED") && global.K_MAP_PRESSED)
         _map_pressed = true;
 
-    // Click no botão de mapa do HUD (canto superior direito sob o minimapa)
+    // Click no botão de mapa do HUD
     if(!_m.map_open && mouse_check_button_pressed(mb_left))
     {
         if(_mx >= _gw - 65 * _ratio && _mx <= _gw - 5 * _ratio
@@ -539,7 +782,7 @@ function TomTom_Update()
         _m.drag_pin_idx = -1;
     }
 
-    // 4. Interações no painel do mapa
+    // 6. Interações no painel do mapa
     if(_m.map_open)
     {
         TomTom_MapInput(_m);
@@ -547,59 +790,167 @@ function TomTom_Update()
 }
 
 // ---------------------------------------------------------------------------
-// SONAR BUTTON
+// RADAR HUD BUTTON & 3 SUB-BADGES GEOMETRY
+// (Sonar Button 51px V e H)
 // ---------------------------------------------------------------------------
 
-function TomTom_ButtonX()
+function TomTom_ButtonGeometry()
 {
-    return display_get_gui_width() - round(51 * TomTom_ScaleRatio());
+    var _ratio = TomTom_ScaleRatio();
+    var _gw    = display_get_gui_width();
+
+    var _base_x = _gw - round(100 * _ratio);
+    var _base_y = round(305 * _ratio);
+
+    // Sonar Button ampliado para 56px (+5px V e H)
+    var _sonar_size = round(56 * _ratio);
+    var _sonar_x    = _base_x;
+    var _sonar_y    = _base_y + round(5 * _ratio);
+
+    return {
+        base_x:   _base_x,
+        base_y:   _base_y,
+        radar_x:  _sonar_x,
+        radar_y:  _sonar_y,
+        radar_w:  _sonar_size,
+        radar_h:  _sonar_size,
+        radar_cx: _sonar_x + _sonar_size * 0.5,
+        radar_cy: _sonar_y + _sonar_size * 0.5,
+        ratio:    _ratio
+    };
 }
 
-function TomTom_ButtonY()
+function TomTom_BadgeGeometry(_index)
 {
-    return round(display_get_gui_height() * 0.237) + round(80 * TomTom_ScaleRatio());
+    var _bg    = TomTom_ButtonGeometry();
+    var _ratio = _bg.ratio;
+
+    // Mini-ícones (22px de tamanho)
+    var _bsize = round(22 * _ratio);
+    var _bx    = _bg.base_x + round(64 * _ratio);
+
+    var _by    = _bg.base_y + round(8 * _ratio);
+    switch(_index)
+    {
+        case 0: _by = _bg.base_y + round(8 * _ratio);   break; // Topo: 👤 NPCs (Guia)
+        case 1: _by = _bg.base_y + round(33 * _ratio);  break; // Centro: 📦 Baús (Storage)
+        case 2: _by = _bg.base_y + round(58 * _ratio);  break; // Base: 👹 Mobs (Goblin)
+    }
+
+    return {
+        cx:   _bx,
+        cy:   _by,
+        size: _bsize
+    };
 }
 
 function TomTom_ButtonInput(_m)
 {
-    var _x  = TomTom_ButtonX();
-    var _y  = TomTom_ButtonY();
-    var _r  = round(28 * TomTom_ScaleRatio());
-    var _mx = device_mouse_x_to_gui(0);
-    var _my = device_mouse_y_to_gui(0);
+    var _bg    = TomTom_ButtonGeometry();
+    var _mx    = device_mouse_x_to_gui(0);
+    var _my    = device_mouse_y_to_gui(0);
 
-    if(point_in_rectangle(_mx, _my, _x - _r, _y - _r, _x + _r, _y + _r))
+    // 1. Clique nos 3 Mini-Badges (Sub-Toggles à direita)
+    for(var b = 0; b < 3; b++)
+    {
+        var _badge = TomTom_BadgeGeometry(b);
+        var _bhalf = _badge.size * 0.65;
+
+        if(point_in_rectangle(_mx, _my, _badge.cx - _bhalf, _badge.cy - _bhalf, _badge.cx + _bhalf, _badge.cy + _bhalf))
+        {
+            with(objGUIIngameController) { craftMo = true; }
+            Input.DisableMenuInputs(0.1);
+
+            if(mouse_check_button_pressed(mb_left))
+            {
+                if(b == 0)      _m.track_npcs   = !_m.track_npcs;
+                else if(b == 1) _m.track_chests = !_m.track_chests;
+                else if(b == 2) _m.track_mobs   = !_m.track_mobs;
+
+                TomTom_SavePins(_m);
+                mouse_clear(mb_left);
+                return;
+            }
+        }
+    }
+
+    // 2. Clique no Botão Principal do Sonar / Radar (à esquerda)
+    if(point_in_rectangle(_mx, _my, _bg.radar_x, _bg.radar_y, _bg.radar_x + _bg.radar_w, _bg.radar_y + _bg.radar_h))
     {
         with(objGUIIngameController) { craftMo = true; }
         Input.DisableMenuInputs(0.1);
 
         if(mouse_check_button_pressed(mb_left))
         {
-            _m.enabled = !_m.enabled;
+            _m.radar_mode = !_m.radar_mode;
+            TomTom_SavePins(_m);
             mouse_clear(mb_left);
+            return;
         }
     }
 }
 
 function TomTom_DrawButton(_m)
 {
-    var _ratio = TomTom_ScaleRatio();
-    var _x     = TomTom_ButtonX();
-    var _y     = TomTom_ButtonY();
-    var _spr   = sprItemAccesorySonar;
-    var _size  = 53 * _ratio;
-    var _scale = _size / max(sprite_get_width(_spr), sprite_get_height(_spr));
-    var _ox    = (sprite_get_xoffset(_spr) - sprite_get_width(_spr)  * 0.5) * _scale;
-    var _oy    = (sprite_get_yoffset(_spr) - sprite_get_height(_spr) * 0.5) * _scale;
+    var _bg    = TomTom_ButtonGeometry();
+    var _ratio = _bg.ratio;
+    var _mx    = device_mouse_x_to_gui(0);
+    var _my    = device_mouse_y_to_gui(0);
+
+    // 1. Desenho do Botão Principal (Sonar)
+    var _spr_sonar = sprItemAccesorySonar;
+    var _sover     = point_in_rectangle(_mx, _my, _bg.radar_x, _bg.radar_y, _bg.radar_x + _bg.radar_w, _bg.radar_y + _bg.radar_h);
+    var _sscale    = (_bg.radar_w / max(sprite_get_width(_spr_sonar), sprite_get_height(_spr_sonar)))
+                     * (_sover ? 1.15 : 1.0);
+    var _sox       = (sprite_get_xoffset(_spr_sonar) - sprite_get_width(_spr_sonar) * 0.5) * _sscale;
+    var _soy       = (sprite_get_yoffset(_spr_sonar) - sprite_get_height(_spr_sonar) * 0.5) * _sscale;
 
     Draw.Sprite(
-        _spr, 0,
-        _x + _ox, _y + _oy,
-        _scale, _scale,
+        _spr_sonar, 0,
+        _bg.radar_cx + _sox, _bg.radar_cy + _soy,
+        _sscale, _sscale,
         0,
-        _m.enabled ? c_white : c_gray,
-        _m.enabled ? 1 : 0.5
+        _m.radar_mode ? c_white : c_gray,
+        _m.radar_mode ? 1.0 : 0.45
     );
+
+    // 2. Desenho dos 3 Mini-Badges (👤 Guia, 📦 Baú, 👹 Goblin)
+    var _gob_spr = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+
+    for(var b = 0; b < 3; b++)
+    {
+        var _badge    = TomTom_BadgeGeometry(b);
+        var _bactive  = (b == 0) ? _m.track_npcs : ((b == 1) ? _m.track_chests : _m.track_mobs);
+        var _bover    = point_in_rectangle(_mx, _my,
+                            _badge.cx - _badge.size * 0.5, _badge.cy - _badge.size * 0.5,
+                            _badge.cx + _badge.size * 0.5, _badge.cy + _badge.size * 0.5);
+
+        var _spr_badge = sprNPCPortraitGuide;
+        if(b == 1)      _spr_badge = sprGUIIngameIconStorage;
+        else if(b == 2) _spr_badge = _gob_spr;
+
+        if(_spr_badge < 0 || !sprite_exists(_spr_badge))
+            continue;
+
+        var _bscale = (_badge.size / max(sprite_get_width(_spr_badge), sprite_get_height(_spr_badge)))
+                      * (_bover ? 1.2 : 1.0);
+        var _box    = (sprite_get_xoffset(_spr_badge) - sprite_get_width(_spr_badge) * 0.5) * _bscale;
+        var _boy    = (sprite_get_yoffset(_spr_badge) - sprite_get_height(_spr_badge) * 0.5) * _bscale;
+
+        // Moldura escura pixel-art atrás de cada mini-ícone
+        draw_set_color(c_black);
+        draw_rectangle(_badge.cx - _badge.size * 0.5 - 1, _badge.cy - _badge.size * 0.5 - 1,
+                       _badge.cx + _badge.size * 0.5 + 1, _badge.cy + _badge.size * 0.5 + 1, false);
+
+        Draw.Sprite(
+            _spr_badge, 0,
+            _badge.cx + _box, _badge.cy + _boy,
+            _bscale, _bscale,
+            0,
+            _bactive ? (_bover ? c_yellow : c_white) : c_gray,
+            _bactive ? 1.0 : 0.45
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -744,7 +1095,6 @@ function TomTom_DrawMapOverlay(_m)
     // 1. Marcadores no canvas do mapa
     for(var i = 0; i < array_length(_m.pins); i++)
     {
-        // Se este marcador está sendo arrastado pelo mouse, oculta ele do mapa enquanto estiver no cursor
         if(_m.drag_active && _m.drag_pin_idx == i)
             continue;
 
@@ -757,15 +1107,12 @@ function TomTom_DrawMapOverlay(_m)
         var _iscale = _size / max(sprite_get_width(_spr), sprite_get_height(_spr));
 
         Draw.Sprite(
-            _spr,
-            0,
-            _psx,
-            _psy,
-            _iscale,
-            _iscale,
+            _spr, 0,
+            _psx, _psy,
+            _iscale, _iscale,
             0,
             _is_sel ? c_yellow : c_white,
-            1
+            1.0
         );
 
         // Exibe coordenadas (X, Y) abaixo do marcador (+50% de escala: 1.65)
@@ -801,11 +1148,10 @@ function TomTom_DrawMapOverlay(_m)
     {
         var _geom    = TomTom_PaletteGeometry(b);
         var _spr_pal = TomTom_PinSprite(b);
-        var _psize   = _geom.size;
         var _over    = point_in_rectangle(_mx, _my,
-                            _geom.x - _psize * 0.5, _geom.y - _psize * 0.5,
-                            _geom.x + _psize * 0.5, _geom.y + _psize * 0.5);
-        var _pscale  = (_psize / max(sprite_get_width(_spr_pal), sprite_get_height(_spr_pal)))
+                            _geom.x - _geom.size * 0.5, _geom.y - _geom.size * 0.5,
+                            _geom.x + _geom.size * 0.5, _geom.y + _geom.size * 0.5);
+        var _pscale  = (_geom.size / max(sprite_get_width(_spr_pal), sprite_get_height(_spr_pal)))
                     * (_over ? 1.2 : 1.0);
 
         Draw.Sprite(_spr_pal, 0, _geom.x, _geom.y, _pscale, _pscale, 0,
@@ -841,7 +1187,7 @@ function TomTom_DrawPlayerCoords()
         return;
 
     var _ratio = TomTom_ScaleRatio();
-    var _textScale = 3.0 * _ratio; // Mesmo padrão do RealClock
+    var _textScale = 3.0 * _ratio; // Padrão RealClock
 
     var _tile = TILE_SIZE;
     if(_tile <= 0) _tile = 16;
@@ -865,7 +1211,8 @@ function TomTom_DrawPlayerCoords()
 }
 
 // ---------------------------------------------------------------------------
-// UNIFIED TOMTOM TARGET DRAW (NPCs, Jogadores e Marcadores de Mapa)
+// UNIFIED SCREEN TARGET DRAW
+// (NPCs na tela: Oculta portrait, exibe apenas o nome centralizado embaixo)
 // ---------------------------------------------------------------------------
 
 function TomTom_DrawTarget(
@@ -881,7 +1228,7 @@ function TomTom_DrawTarget(
     _py,
     _cam_x,
     _cam_y,
-    _is_pin
+    _target_type
 )
 {
     var _tile       = TILE_SIZE > 0 ? TILE_SIZE : 16;
@@ -890,35 +1237,44 @@ function TomTom_DrawTarget(
     var _dist_tiles = point_distance(_px, _py, _x, _y) / _tile;
 
     // Distância mínima para exibição
-    if(_dist_tiles <= (_is_pin ? 2 : 3))
+    if(_dist_tiles <= 1.0)
         return;
 
-    var _sx       = (_x - _cam_x) * _s;
-    var _sy       = (_y - _cam_y) * _s;
+    var _sx = (_x - _cam_x) * _s;
+    var _sy = (_y - _cam_y) * _s;
     var _dist_str = string(round(_dist_tiles)) + "m";
 
-    // Alvo visível dentro da tela
+    // 1. Alvo está DENTRO da tela visível (On-Screen)
     if(_sx >= _margin && _sx <= _w - _margin && _sy >= _margin && _sy <= _h - _margin)
     {
-        if(_is_pin)
+        if(_target_type == 0) // NPC na tela -> Oculta o portrait, desenha o nome elevado e centralizado sob os pés do NPC
         {
-            var _icon_size  = 18 * _s;
-            var _icon_scale = _icon_size / max(sprite_get_width(_sprite), sprite_get_height(_sprite));
-            Draw.Sprite(_sprite, 0, _sx, _sy, _icon_scale, _icon_scale, 0, c_white, 1);
-            GUI.DrawText(_sx, _sy + 14 * _s, _dist_str, 5, c_yellow, 1, _s * 0.60);
+            GUI.DrawText(_sx, _sy + 8 * _s, _name, 5, c_white, 1, _s * 0.55);
         }
-        else
+        else if(_target_type == 1) // Pin do Mapa -> mostra ícone do pin + metragem
         {
-            var _iy = _sy + 18 * _s;
-            if(_sprite != -1)
-                Draw.Sprite(_sprite, 0, _sx, _iy, 0.42 * _s, 0.42 * _s, 0, c_white, 1);
+            var _sw1   = sprite_get_width(_sprite);
+            var _sh1   = sprite_get_height(_sprite);
+            var _iscl1 = 18 * _s / max(_sw1, _sh1);
+            var _sox1  = (sprite_get_xoffset(_sprite) - _sw1 * 0.5) * _iscl1;
+            var _soy1  = (sprite_get_yoffset(_sprite) - _sh1 * 0.5) * _iscl1;
 
-            GUI.DrawText(_sx, _iy + 10 * _s, _name, 5, c_white, 1, _s * 0.55);
+            Draw.Sprite(_sprite, 0, _sx + _sox1, _sy + _soy1, _iscl1, _iscl1, 0, c_white, 1);
+            GUI.DrawText(_sx, _sy + 11 * _s, _dist_str, 5, c_yellow, 1, _s * 0.60);
+        }
+        else if(_target_type == 2) // Baú -> centralizado perfeitamente embaixo do baú
+        {
+            GUI.DrawText(_sx + 8 * _s, _sy + 14 * _s, _dist_str, 5, c_yellow, 1, _s * 0.55);
+        }
+        else if(_target_type == 3) // Mob -> centralizado embaixo do mob
+        {
+            var _m_lbl = (_name != "" && _name != "Monster" && _name != "Creature") ? (_name + " (" + _dist_str + ")") : _dist_str;
+            GUI.DrawText(_sx, _sy + 12 * _s, _m_lbl, 5, c_white, 1, _s * 0.55);
         }
         return;
     }
 
-    // Alvo fora da tela -> projeta seta na borda
+    // 2. Alvo está FORA da tela -> Projeção na borda
     var _dir   = point_direction(0, 0, _dx, _dy);
     var _rad   = degtorad(_dir);
     var _vx    = cos(_rad);
@@ -931,29 +1287,213 @@ function TomTom_DrawTarget(
     var _ex    = _w * 0.5 + _vx * _min_s;
     var _ey    = _h * 0.5 + _vy * _min_s;
 
-    if(_is_pin)
-    {
-        var _icon_size  = 18 * _s;
-        var _icon_scale = _icon_size / max(sprite_get_width(_sprite), sprite_get_height(_sprite));
+    // Seta direcional projetada na margem externa
+    Draw.Sprite(sprGUIIngameArrowRight, 0, _ex + _vx * 18 * _s, _ey + _vy * 18 * _s, 0.80 * _s, 0.80 * _s, _dir, c_white, 1);
 
-        Draw.Sprite(sprGUIIngameArrowRight, 0, _ex + _vx * 14 * _s, _ey + _vy * 14 * _s, 0.70 * _s, 0.70 * _s, _dir, c_white, 1);
-        Draw.Sprite(_sprite, 0, _ex, _ey, _icon_scale, _icon_scale, 0, c_white, 1);
-        GUI.DrawText(_ex, _ey + 14 * _s, _dist_str, 5, c_yellow, 1, _s * 0.60);
+    // Ícone representativo com centralização geométrica
+    if(_sprite != -1 && _sprite >= 0 && sprite_exists(_sprite))
+    {
+        var _sw2   = sprite_get_width(_sprite);
+        var _sh2   = sprite_get_height(_sprite);
+        var _iscl2 = 20 * _s / max(_sw2, _sh2);
+        var _sox2  = (sprite_get_xoffset(_sprite) - _sw2 * 0.5) * _iscl2;
+        var _soy2  = (sprite_get_yoffset(_sprite) - _sh2 * 0.5) * _iscl2;
+
+        Draw.Sprite(_sprite, 0, _ex + _sox2, _ey + _soy2, _iscl2, _iscl2, 0, c_white, 1);
+    }
+
+    // Texto posicionado com separação confortável (+3px) abaixo do ícone
+    if(_target_type == 2 || _target_type == 1)
+    {
+        GUI.DrawText(_ex, _ey + 15 * _s, _dist_str, 5, c_yellow, 1, _s * 0.55);
     }
     else
     {
-        Draw.Sprite(sprGUIIngameArrowRight, 0, _ex + _vx * 18 * _s, _ey + _vy * 18 * _s, 0.80 * _s, 0.80 * _s, _dir, c_white, 1);
-
-        if(_sprite != -1)
-            Draw.Sprite(_sprite, 0, _ex, _ey, 0.45 * _s, 0.45 * _s, 0, c_white, 1);
-
-        var _label = _name + " (" + _dist_str + ")";
-        GUI.DrawText(_ex, _ey + 11 * _s, _label, 5, c_white, 1, _s * 0.55);
+        var _label = (_name != "" && _name != "Monster" && _name != "Creature") ? (_name + " (" + _dist_str + ")") : _dist_str;
+        GUI.DrawText(_ex, _ey + 15 * _s, _label, 5, c_white, 1, _s * 0.55);
     }
 }
 
 // ---------------------------------------------------------------------------
-// DRAW
+// MINIMAP TARGET DRAW (Modo Minimapa / GPS - Fórmula Oficial BetterMap)
+// _only_edge: Se verdadeiro (ex: NPCs), só desenha na borda quando fora do minimapa
+// ---------------------------------------------------------------------------
+
+function TomTom_DrawMinimapTarget(_world_x, _world_y, _sprite, _color, _ratio, _only_edge)
+{
+    var _miniGw = display_get_gui_width();
+    var _miniGh = display_get_gui_height();
+
+    var _frameW = max(sprite_get_width(sprGUIIngameMinimapContainer), _miniGw * 0.16);
+    var _frameH = max(sprite_get_height(sprGUIIngameMinimapContainer), _miniGh * 0.19);
+    var _miniScale = is_struct(MINIMAP) && variable_struct_exists(MINIMAP, "scale") ? MINIMAP.scale : 1.0;
+    if(_miniScale <= 0) return;
+
+    var _frameRightMargin = max(7, _miniGw * 0.008);
+    var _frameLeft        = _miniGw - _frameW - _frameRightMargin;
+    var _frameTop         = max(7, _miniGh * 0.015);
+
+    var _innerInsetX      = max(11, _frameW * 0.043);
+    var _innerInsetTop    = max(13, _frameH * 0.074);
+    var _innerInsetBottom = max(4, _frameH * 0.025);
+
+    var _miniLeft   = _frameLeft + _innerInsetX;
+    var _miniTop    = _frameTop + _innerInsetTop;
+    var _miniRight  = _frameLeft + _frameW - _innerInsetX;
+    var _miniBottom = _frameTop + _frameH - _innerInsetBottom;
+
+    var _miniCenterX = (_miniLeft + _miniRight) * 0.5;
+    var _miniCenterY = (_miniTop + _miniBottom) * 0.5;
+
+    var _miniTile = TILE_SIZE > 0 ? TILE_SIZE : 16;
+    var _playerMapX = MY_PLAYER.x / _miniTile;
+    var _playerMapY = MY_PLAYER.y / _miniTile;
+
+    var _targetMapX = _world_x / _miniTile;
+    var _targetMapY = _world_y / _miniTile;
+
+    var _targetMiniX = _miniCenterX + (_targetMapX - _playerMapX) * _miniScale;
+    var _targetMiniY = _miniCenterY + (_targetMapY - _playerMapY) * _miniScale;
+
+    // Ícones no Minimapa ampliados para 16px (+2px)
+    var _iconSize = round(16 * _ratio);
+    var _iconHalf = _iconSize * 0.5;
+
+    // Se o alvo está dentro da tela do minimapa
+    if(_targetMiniX >= _miniLeft + _iconHalf && _targetMiniX <= _miniRight - _iconHalf
+    && _targetMiniY >= _miniTop  + _iconHalf && _targetMiniY <= _miniBottom - _iconHalf)
+    {
+        // Se for _only_edge (NPCs/Players que o jogo já renderiza dentro da viewport), não desenha duplicado
+        if(_only_edge) return;
+
+        if(_sprite != -1 && _sprite >= 0 && sprite_exists(_sprite))
+        {
+            var _sw   = sprite_get_width(_sprite);
+            var _sh   = sprite_get_height(_sprite);
+            var _scale = _iconSize / max(_sw, _sh);
+            var _sox  = (sprite_get_xoffset(_sprite) - _sw * 0.5) * _scale;
+            var _soy  = (sprite_get_yoffset(_sprite) - _sh * 0.5) * _scale;
+
+            Draw.Sprite(_sprite, 0, _targetMiniX + _sox, _targetMiniY + _soy, _scale * 1.15, _scale * 1.15, 0, c_black, 0.7);
+            Draw.Sprite(_sprite, 0, _targetMiniX + _sox, _targetMiniY + _soy, _scale,        _scale,        0, _color,  1.0);
+        }
+    }
+    else
+    {
+        // Se o alvo está fora do minimapa -> projeta na margem da moldura
+        var _dirX = _targetMiniX - _miniCenterX;
+        var _dirY = _targetMiniY - _miniCenterY;
+
+        if(abs(_dirX) < 0.001 && abs(_dirY) < 0.001)
+            return;
+
+        var _halfW = (_miniRight - _miniLeft) * 0.5 - _iconHalf;
+        var _halfH = (_miniBottom - _miniTop) * 0.5 - _iconHalf;
+
+        var _tx = (abs(_dirX) > 0.001) ? _halfW / abs(_dirX) : 1000000;
+        var _ty = (abs(_dirY) > 0.001) ? _halfH / abs(_dirY) : 1000000;
+        var _edgeT = min(_tx, _ty);
+
+        var _edgeX = _miniCenterX + _dirX * _edgeT;
+        var _edgeY = _miniCenterY + _dirY * _edgeT;
+
+        if(_sprite != -1 && _sprite >= 0 && sprite_exists(_sprite))
+        {
+            var _sw2   = sprite_get_width(_sprite);
+            var _sh2   = sprite_get_height(_sprite);
+            var _scale = (_iconSize * 0.9) / max(_sw2, _sh2);
+            var _sox2  = (sprite_get_xoffset(_sprite) - _sw2 * 0.5) * _scale;
+            var _soy2  = (sprite_get_yoffset(_sprite) - _sh2 * 0.5) * _scale;
+
+            Draw.Sprite(_sprite, 0, _edgeX + _sox2, _edgeY + _soy2, _scale * 1.25, _scale * 1.25, 0, c_black, 0.85);
+            Draw.Sprite(_sprite, 0, _edgeX + _sox2, _edgeY + _soy2, _scale,        _scale,        0, _color,  1.0);
+        }
+    }
+}
+
+function TomTom_DrawMinimapRadar(_m)
+{
+    if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER)) return;
+    if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0) return;
+
+    var _ratio = TomTom_ScaleRatio();
+    var _tile  = TILE_SIZE > 0 ? TILE_SIZE : 16;
+    var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
+    var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
+
+    // 1. NPCs & Players no Minimapa (só desenha na borda quando fora do minimapa!)
+    if(_m.track_npcs)
+    {
+        for(var i = 0; i < array_length(_m.npcs); i++)
+        {
+            var _n = _m.npcs[i];
+            if(!instance_exists(_n.inst)) continue;
+
+            if(_has_p_reg && variable_instance_exists(_n.inst, "netRegion"))
+            {
+                if(variable_instance_get(_n.inst, "netRegion") != _p_reg)
+                    continue;
+            }
+
+            TomTom_DrawMinimapTarget(_n.x, _n.y, _n.sprite != -1 ? _n.sprite : sprGUIIngameIconPOI, c_white, _ratio, true);
+        }
+
+        var _count = instance_number(objPlayer);
+        for(var i = 0; i < _count; i++)
+        {
+            var _player = instance_find(objPlayer, i);
+            if(_player == MY_PLAYER || !instance_exists(_player)) continue;
+
+            if(_has_p_reg)
+            {
+                if(!variable_instance_exists(_player, "netRegion")
+                || variable_instance_get(_player, "netRegion") != _p_reg)
+                    continue;
+            }
+
+            TomTom_DrawMinimapTarget(_player.x, _player.y, sprGUIIngameIconPOI, c_aqua, _ratio, true);
+        }
+    }
+
+    // 2. Pins & Baús no Minimapa
+    if(_m.track_chests)
+    {
+        for(var i = 0; i < array_length(_m.pins); i++)
+        {
+            var _pin     = _m.pins[i];
+            var _world_x = _pin.map_x * _tile;
+            var _world_y = _pin.map_y * _tile;
+
+            TomTom_DrawMinimapTarget(_world_x, _world_y, TomTom_PinSprite(_pin.type), c_yellow, _ratio, false);
+        }
+
+        for(var c = 0; c < array_length(_m.chests); c++)
+        {
+            var _chest = _m.chests[c];
+            if(!instance_exists(_chest.inst)) continue;
+
+            var _cspr = (_chest.sprite != -1 && sprite_exists(_chest.sprite)) ? _chest.sprite : sprGUIIngameIconStorage;
+            TomTom_DrawMinimapTarget(_chest.x, _chest.y, _cspr, c_yellow, _ratio, false);
+        }
+    }
+
+    // 3. Mobs no Minimapa (Ícones 16px com sprite representativo)
+    if(_m.track_mobs)
+    {
+        var _def_gob = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+        for(var i = 0; i < array_length(_m.mobs); i++)
+        {
+            var _mob = _m.mobs[i];
+            if(!instance_exists(_mob.inst)) continue;
+
+            var _mspr = (_mob.sprite != -1 && sprite_exists(_mob.sprite)) ? _mob.sprite : _def_gob;
+            TomTom_DrawMinimapTarget(_mob.x, _mob.y, _mspr, c_white, _ratio, false);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DRAW (Navegação em Jogo com Camadas Separadas para Mobs/Baús e NPCs)
 // ---------------------------------------------------------------------------
 
 function TomTom_Draw()
@@ -961,21 +1501,21 @@ function TomTom_Draw()
     var _m = ModInstance.Get("TomTom");
     if(_m == undefined) return;
 
-    // Se o mapa está aberto ou o HUD não está visível, não desenha o radar no jogo
     if(_m.map_open || !TomTom_HUDVisible())
         return;
 
     if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER)) return;
     if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0) return;
 
-    TomTom_DrawButton(_m);
+    TomTom_EnsureDefaults(_m);
 
-    if(!_m.enabled)
-        return;
+    // Desenha o botão Sonar e os 3 mini-badges no HUD
+    TomTom_DrawButton(_m);
 
     var _w      = WINDOW.width;
     var _h      = WINDOW.height;
     var _s      = GUI_SCALE;
+    var _ratio  = TomTom_ScaleRatio();
     var _px     = MY_PLAYER.x;
     var _py     = MY_PLAYER.y;
     var _cam_x  = CAMERA_X;
@@ -985,56 +1525,95 @@ function TomTom_Draw()
     var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
     var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
 
-    // 1. Radar de NPCs
-    var _margin_npc = 44 * _s;
-    for(var i = 0; i < array_length(_m.npcs); i++)
+    // =======================================================================
+    // MODO 1: RADAR NA TELA (TomTom Screen Edge Navigation)
+    // =======================================================================
+    if(_m.radar_mode)
     {
-        var _n = _m.npcs[i];
-        if(_n.name == "" || !instance_exists(_n.inst)) continue;
+        var _margin_outer = 18 * _s; // Camada Externa (Mobs, Baús e Pins colados na borda da tela)
+        var _margin_inner = 48 * _s; // Camada Interna (NPCs e Jogadores afastados da borda)
 
-        if(_has_p_reg && variable_instance_exists(_n.inst, "netRegion"))
+        // 1. Rastreio de NPCs (se ativo) -> Camada Interna (_margin_inner = 48)
+        if(_m.track_npcs)
         {
-            if(variable_instance_get(_n.inst, "netRegion") != _p_reg)
-                continue;
+            for(var i = 0; i < array_length(_m.npcs); i++)
+            {
+                var _n = _m.npcs[i];
+                if(_n.name == "" || !instance_exists(_n.inst)) continue;
+
+                if(_has_p_reg && variable_instance_exists(_n.inst, "netRegion"))
+                {
+                    if(variable_instance_get(_n.inst, "netRegion") != _p_reg)
+                        continue;
+                }
+
+                if(variable_instance_exists(_n.inst, "visible") && !_n.inst.visible)
+                    continue;
+
+                TomTom_DrawTarget(_n.x, _n.y, _n.name, _n.sprite, _w, _h, _s, _margin_inner, _px, _py, _cam_x, _cam_y, 0);
+            }
+
+            // Jogadores Multiplayer -> Camada Interna
+            var _count = instance_number(objPlayer);
+            for(var i = 0; i < _count; i++)
+            {
+                var _player = instance_find(objPlayer, i);
+                if(_player == MY_PLAYER || !instance_exists(_player)) continue;
+
+                if(_has_p_reg)
+                {
+                    if(!variable_instance_exists(_player, "netRegion")
+                    || variable_instance_get(_player, "netRegion") != _p_reg)
+                        continue;
+                }
+
+                TomTom_DrawTarget(_player.x, _player.y, TomTom_GetPlayerName(_player), -1, _w, _h, _s, _margin_inner, _px, _py, _cam_x, _cam_y, 0);
+            }
         }
 
-        if(variable_instance_exists(_n.inst, "visible") && !_n.inst.visible)
-            continue;
-
-        TomTom_DrawTarget(_n.x, _n.y, _n.name, _n.sprite, _w, _h, _s, _margin_npc, _px, _py, _cam_x, _cam_y, false);
-    }
-
-    // 2. Radar de Outros Jogadores
-    var _count = instance_number(objPlayer);
-    for(var i = 0; i < _count; i++)
-    {
-        var _player = instance_find(objPlayer, i);
-        if(_player == MY_PLAYER || !instance_exists(_player)) continue;
-
-        if(_has_p_reg)
+        // 2. Rastreio de Marcadores de Mapa & Baús (se ativo) -> Camada Externa (_margin_outer = 18)
+        if(_m.track_chests)
         {
-            if(!variable_instance_exists(_player, "netRegion")
-            || variable_instance_get(_player, "netRegion") != _p_reg)
-                continue;
+            // Pins de Mapa (0=POI, 1=Storage, 2=Question, 3=Boss, 4=Death) -> Tipo 1
+            for(var i = 0; i < array_length(_m.pins); i++)
+            {
+                var _pin     = _m.pins[i];
+                var _world_x = _pin.map_x * _tile;
+                var _world_y = _pin.map_y * _tile;
+
+                TomTom_DrawTarget(_world_x, _world_y, "", TomTom_PinSprite(_pin.type), _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 1);
+            }
+
+            // Baús do Mundo -> Tipo 2
+            for(var c = 0; c < array_length(_m.chests); c++)
+            {
+                var _chest = _m.chests[c];
+                if(!instance_exists(_chest.inst)) continue;
+
+                var _cspr = (_chest.sprite != -1 && sprite_exists(_chest.sprite)) ? _chest.sprite : sprGUIIngameIconStorage;
+                TomTom_DrawTarget(_chest.x, _chest.y, "", _cspr, _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 2);
+            }
         }
 
-        TomTom_DrawTarget(_player.x, _player.y, TomTom_GetPlayerName(_player), -1, _w, _h, _s, _margin_npc, _px, _py, _cam_x, _cam_y, false);
-    }
+        // 3. Rastreio de Mobs & Monstros (se ativo) -> Camada Externa (_margin_outer = 18)
+        if(_m.track_mobs)
+        {
+            var _def_gob = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
 
-    // 3. Radar de Marcadores de Mapa (Setas TomTom)
-    var _margin_pin = 16 * _s;
-    for(var i = 0; i < array_length(_m.pins); i++)
-    {
-        var _pin     = _m.pins[i];
-        var _world_x = _pin.map_x * _tile;
-        var _world_y = _pin.map_y * _tile;
+            for(var i = 0; i < array_length(_m.mobs); i++)
+            {
+                var _mob = _m.mobs[i];
+                if(!instance_exists(_mob.inst)) continue;
 
-        TomTom_DrawTarget(_world_x, _world_y, "", TomTom_PinSprite(_pin.type), _w, _h, _s, _margin_pin, _px, _py, _cam_x, _cam_y, true);
+                var _mspr = (_mob.sprite != -1 && sprite_exists(_mob.sprite)) ? _mob.sprite : _def_gob;
+                TomTom_DrawTarget(_mob.x, _mob.y, _mob.name, _mspr, _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 3);
+            }
+        }
     }
 }
 
 // ---------------------------------------------------------------------------
-// PIN PERSISTENCE (tomtom_pins.cfg)
+// PERSISTENCE (tomtom_pins.cfg)
 // ---------------------------------------------------------------------------
 
 function TomTom_SavePins(_m)
@@ -1044,6 +1623,16 @@ function TomTom_SavePins(_m)
     var _file = file_text_open_write("tomtom_pins.cfg");
     if(_file < 0) return;
 
+    // 1ª Linha: Configurações de estado (radar_mode, track_npcs, track_chests, track_mobs)
+    file_text_write_string(_file,
+        "#CFG|" +
+        string(_m.radar_mode ? 1 : 0) + "|" +
+        string(_m.track_npcs ? 1 : 0) + "|" +
+        string(_m.track_chests ? 1 : 0) + "|" +
+        string(_m.track_mobs ? 1 : 0));
+    file_text_writeln(_file);
+
+    // Linhas seguintes: Marcadores de Mapa (inclui tipo 4 = Death Pin)
     for(var i = 0; i < array_length(_m.pins); i++)
     {
         var _p = _m.pins[i];
@@ -1062,6 +1651,8 @@ function TomTom_LoadPins(_m)
     if(_m == undefined) return;
     _m.pins = [];
 
+    TomTom_EnsureDefaults(_m);
+
     var _filename = "";
     if(file_exists("tomtom_pins.cfg"))
         _filename = "tomtom_pins.cfg";
@@ -1079,6 +1670,37 @@ function TomTom_LoadPins(_m)
         file_text_readln(_file);
         if(string_length(_line) <= 0) continue;
 
+        // Linha de Configuração
+        if(string_pos("#CFG|", _line) == 1)
+        {
+            var _cfg_data = string_delete(_line, 1, 5);
+            var _cp1 = string_pos("|", _cfg_data);
+            if(_cp1 > 0)
+            {
+                var _s_mode = string_copy(_cfg_data, 1, _cp1 - 1);
+                var _cr1    = string_delete(_cfg_data, 1, _cp1);
+                var _cp2    = string_pos("|", _cr1);
+                if(_cp2 > 0)
+                {
+                    var _s_npc = string_copy(_cr1, 1, _cp2 - 1);
+                    var _cr2   = string_delete(_cr1, 1, _cp2);
+                    var _cp3   = string_pos("|", _cr2);
+                    if(_cp3 > 0)
+                    {
+                        var _s_chest = string_copy(_cr2, 1, _cp3 - 1);
+                        var _s_mob   = string_delete(_cr2, 1, _cp3);
+
+                        _m.radar_mode   = (real(_s_mode) == 1);
+                        _m.track_npcs   = (real(_s_npc) == 1);
+                        _m.track_chests = (real(_s_chest) == 1);
+                        _m.track_mobs   = (real(_s_mob) == 1);
+                    }
+                }
+            }
+            continue;
+        }
+
+        // Linha de Marcador
         var _p1 = string_pos("|", _line);
         if(_p1 <= 1) continue;
 
@@ -1091,7 +1713,6 @@ function TomTom_LoadPins(_m)
         var _px_str = string_copy(_line, 1, _p1 - 1);
         var _py_str = string_copy(_t1,   1, _p2 - 1);
 
-        // Se houver 3º pipe (legados com label), isola o tipo
         var _p3 = string_pos("|", _t2);
         var _pt_str = (_p3 > 1) ? string_copy(_t2, 1, _p3 - 1) : _t2;
 
