@@ -11,10 +11,10 @@
 
 ## 📸 Screenshots & Showcase
 
-| In-Game Dual-Layer Radar & NPC Names | Sonar HUD Controller & Player Radar | Fullscreen Map & Tombstone Pin |
+| In-Game Dual-Layer Radar & NPC Names | Minimap Radar Mode | Fullscreen Map & Tombstone Pin |
 | :---: | :---: | :---: |
-| ![Radar Tracking](screenshot_radar_tracking.png) | ![HUD Sonar Controls](screenshot_hud_sonar.png) | ![Map Waypoints & Death Pin](screenshot_map_death_pin.png) |
-| *Off-screen entities tracked with distance meters; on-screen NPC names snug beneath feet.* | *Master Sonar toggle with 3 dedicated sub-badges for NPCs, Chests, and Monsters.* | *Interactive map canvas with drag-and-drop pins, coordinate labels, and automatic death grave.* |
+| ![Dual-Layer Radar Tracking](screenshot_radar_tracking.png) | ![Minimap Radar Mode](screenshot_minimap_radar_mode.png) | ![Map Waypoints & Death Pin](screenshot_map_death_pin.png) |
+| *Off-screen entities tracked with distance meters; on-screen NPC names snug beneath feet.* | *Clean GPS mode with border entity projection and modular HUD category toggles.* | *Interactive map canvas with drag-and-drop pins, coordinate labels, and automatic death grave.* |
 
 ---
 

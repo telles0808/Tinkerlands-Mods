@@ -76,9 +76,9 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 * **Clean In-Screen Aesthetics:** Hides portraits when NPCs enter your screen, displaying their name neatly beneath their feet.
 * **Screenshots & In-Game Showcase:**
 
-  | Dual-Layer Radar & Entity Tracking | HUD Sonar Master Controller | Fullscreen Map & Death Pin |
+  | Dual-Layer Radar & Entity Tracking | Minimap Radar Mode | Fullscreen Map & Death Pin |
   | :---: | :---: | :---: |
-  | ![Radar Tracking](mods/TomTom/screenshot_radar_tracking.png) | ![HUD Sonar Controls](mods/TomTom/screenshot_hud_sonar.png) | ![Map Waypoints & Death Pin](mods/TomTom/screenshot_map_death_pin.png) |
+  | ![Dual-Layer Radar Tracking](mods/TomTom/screenshot_radar_tracking.png) | ![Minimap Radar Mode](mods/TomTom/screenshot_minimap_radar_mode.png) | ![Map Waypoints & Death Pin](mods/TomTom/screenshot_map_death_pin.png) |
 
 * **Documentation & Source:** [mods/TomTom/README.md](mods/TomTom/README.md) • [mods/TomTom/src/telles0808_id5004_tomtom.gml](mods/TomTom/src/telles0808_id5004_tomtom.gml)
 
@@ -94,7 +94,6 @@ Each mod folder includes a 1-click Windows Command Script (`.cmd`) to compile, p
 | **RealClock** | [`mods/RealClock/src/telles0808_id5002_realclock.cmd`](mods/RealClock/src/telles0808_id5002_realclock.cmd) |
 | **Better Organizer** | [`mods/BO/src/telles0808_id5003_bo.cmd`](mods/BO/src/telles0808_id5003_bo.cmd) |
 | **TomTom** | [`mods/TomTom/src/telles0808_id5004_tomtom.cmd`](mods/TomTom/src/telles0808_id5004_tomtom.cmd) |
-| **Build All** | [`tools/Build_All.cmd`](tools/Build_All.cmd) |
 
 ---
 
