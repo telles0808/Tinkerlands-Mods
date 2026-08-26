@@ -1,7 +1,13 @@
-# Compiled build artifacts and temp directories
+# Temporary build folders and zip archives
 /mods/*/dist/
 /temp/
 *.tmp
 *.zip
-PROJECT_CONTEXT.md
-Dumps/
+
+# Local player runtime saves and configurations
+*.cfg
+
+# Operating system metadata
+Thumbs.db
+desktop.ini
+.DS_Store
