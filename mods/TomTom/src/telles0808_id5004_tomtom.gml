@@ -625,10 +625,12 @@ function TomTom_Update()
         var _death_map_y = MY_PLAYER.y / _tile;
 
         // Auto-cria o Pin de Morte (Tipo 5 = Lápide / Caixão) no ponto exato da morte
+        var _death_reg = (variable_instance_exists(MY_PLAYER, "netRegion") && !is_undefined(MY_PLAYER.netRegion)) ? MY_PLAYER.netRegion : 0;
         array_push(_m.pins, {
-            map_x: _death_map_x,
-            map_y: _death_map_y,
-            type:  5
+            map_x:  _death_map_x,
+            map_y:  _death_map_y,
+            type:   5,
+            region: _death_reg
         });
 
         TomTom_SavePins(_m);
@@ -1742,21 +1744,19 @@ function TomTom_GetIslandKey()
 {
     var _m = ModInstance.Get("TomTom");
 
-    // 1. Tenta chamar ship_nav_get_random_island_id diretamente da engine
-    var _nav_fn = asset_get_index("ship_nav_get_random_island_id");
-    if(_nav_fn >= 0)
-    {
-        var _rnd_id = script_execute(_nav_fn);
-        if(!is_undefined(_rnd_id) && _rnd_id != -1 && _rnd_id != 0 && string(_rnd_id) != "" && string(_rnd_id) != "0")
-        {
-            return "rnd_" + string(_rnd_id);
-        }
-    }
-
-    // 2. Se o lifecycle marcou como ilha secundária ou não-principal
+    // 1. Se o lifecycle marcou como ilha secundária / expedição
     if(_m != undefined && variable_instance_exists(_m, "is_main_island") && !_m.is_main_island)
     {
-        // Checa variáveis em objWorldController
+        // Tenta extrair ID ou seed da ilha atual de forma 100% segura
+        if(variable_global_exists("WORLD") && is_struct(WORLD))
+        {
+            if(variable_struct_exists(WORLD, "seed") && string(WORLD.seed) != "" && string(WORLD.seed) != "0")
+                return "rnd_" + string(WORLD.seed);
+
+            if(variable_struct_exists(WORLD, "islandID") && string(WORLD.islandID) != "" && string(WORLD.islandID) != "0")
+                return "rnd_" + string(WORLD.islandID);
+        }
+
         if(instance_exists(objWorldController))
         {
             var _wc = instance_find(objWorldController, 0);
@@ -1766,57 +1766,19 @@ function TomTom_GetIslandKey()
                 return "rnd_" + string(_wc.randomIslandID);
         }
 
-        // Checa struct WORLD
-        if(variable_global_exists("WORLD") && is_struct(WORLD))
-        {
-            if(variable_struct_exists(WORLD, "islandID") && string(WORLD.islandID) != "" && string(WORLD.islandID) != "0")
-                return "rnd_" + string(WORLD.islandID);
-            if(variable_struct_exists(WORLD, "randomIslandID") && string(WORLD.randomIslandID) != "" && string(WORLD.randomIslandID) != "0")
-                return "rnd_" + string(WORLD.randomIslandID);
-        }
-
-        // Checa struct ISLAND_DATA
-        if(variable_global_exists("ISLAND_DATA") && is_struct(ISLAND_DATA))
-        {
-            if(variable_struct_exists(ISLAND_DATA, "islandID") && string(ISLAND_DATA.islandID) != "" && string(ISLAND_DATA.islandID) != "0")
-                return "rnd_" + string(ISLAND_DATA.islandID);
-        }
-
         return "rnd_expedition";
     }
 
-    // 3. Checa estrutura WORLD / isRandomIsland
+    // 2. Se WORLD.isRandomIsland estiver ativo
     if(variable_global_exists("WORLD") && is_struct(WORLD))
     {
-        var _is_random = (variable_struct_exists(WORLD, "isRandomIsland") && WORLD.isRandomIsland);
-        var _island_id = variable_struct_exists(WORLD, "islandID") ? string(WORLD.islandID) : "";
-
-        if(_is_random)
+        if(variable_struct_exists(WORLD, "isRandomIsland") && WORLD.isRandomIsland)
         {
-            var _seed = variable_struct_exists(WORLD, "seed") ? string(WORLD.seed) : "";
-            if(_seed != "")
-                return "rnd_" + _island_id + "_" + _seed;
-            else if(_island_id != "")
-                return "rnd_" + _island_id;
-            else
-                return "rnd_island";
-        }
-        else if(_island_id != "" && _island_id != "0")
-        {
-            return "island_" + _island_id;
-        }
-    }
-
-    // 4. Checa se o jogador possui netRegion
-    if(variable_global_exists("MY_PLAYER") && instance_exists(MY_PLAYER))
-    {
-        if(variable_instance_exists(MY_PLAYER, "netRegion"))
-        {
-            var _reg = variable_instance_get(MY_PLAYER, "netRegion");
-            if(!is_undefined(_reg) && _reg != 0 && string(_reg) != "0" && string(_reg) != "" && string(_reg) != "undefined")
-            {
-                return "reg_" + string(_reg);
-            }
+            if(variable_struct_exists(WORLD, "seed") && string(WORLD.seed) != "" && string(WORLD.seed) != "0")
+                return "rnd_" + string(WORLD.seed);
+            if(variable_struct_exists(WORLD, "islandID") && string(WORLD.islandID) != "" && string(WORLD.islandID) != "0")
+                return "rnd_" + string(WORLD.islandID);
+            return "rnd_island";
         }
     }
 
@@ -1854,8 +1816,14 @@ function TomTom_SavePins(_m)
 
                 if(_p3 > 1)
                 {
-                    var _line_island = string_delete(_t2, 1, _p3);
-                    if(_line_island != _current_island)
+                    var _rest_line = string_delete(_t2, 1, _p3);
+                    var _p4 = string_pos("|", _rest_line);
+                    var _line_island = (_p4 > 1) ? string_copy(_rest_line, 1, _p4 - 1) : _rest_line;
+
+                    var _line_is_main = (_line_island == "island_0" || _line_island == "main" || _line_island == "island_main");
+                    var _curr_is_main = (_current_island == "island_0" || _current_island == "main" || _current_island == "island_main");
+
+                    if(_line_island != _current_island && !(_line_is_main && _curr_is_main))
                     {
                         array_push(_other_island_lines, _l);
                     }
