@@ -259,7 +259,8 @@ function TomTom_PinSprite(_type)
         case 1: return sprGUIIngameIconStorage;       // 📦 Storage
         case 2: return sprGUIIngameIconQuestionMark;  // ❓ Question Mark
         case 3: return sprGUIIngameIconBoss;          // 💀 Boss
-        case 4: return sprTombStone;                  // 🪦 Lápide (Death Pin direto)
+        case 4: return sprGUIIngameIconTeleport;      // 🌀 Portal Azul (Teleporte)
+        case 5: return sprTombStone;                  // 🪦 Lápide (Death Pin)
     }
     return sprGUIIngameIconPOI;
 }
@@ -318,7 +319,7 @@ function TomTom_InProtectedHeaderZone(_mx, _my)
 {
     var _ratio = TomTom_ScaleRatio();
     var _gw    = display_get_gui_width();
-    var _lp    = TomTom_PaletteGeometry(3); // 4 pins: index 0, 1, 2, 3
+    var _lp    = TomTom_PaletteGeometry(4); // 5 pins: index 0, 1, 2, 3, 4
 
     if(_mx <= _lp.x + 36 * _ratio && _my <= 96 * _ratio)
         return true;
@@ -582,11 +583,11 @@ function TomTom_Update()
         var _death_map_x = MY_PLAYER.x / _tile;
         var _death_map_y = MY_PLAYER.y / _tile;
 
-        // Auto-cria o Pin de Morte (Tipo 4 = Lápide / Caixão) no ponto exato da morte
+        // Auto-cria o Pin de Morte (Tipo 5 = Lápide / Caixão) no ponto exato da morte
         array_push(_m.pins, {
             map_x: _death_map_x,
             map_y: _death_map_y,
-            type:  4
+            type:  5
         });
 
         TomTom_SavePins(_m);
@@ -1022,7 +1023,7 @@ function TomTom_MapInput(_m)
     }
 
     // 1. Clicar em ícone da paleta para iniciar arrasto
-    for(var i = 0; i < 4; i++)
+    for(var i = 0; i < 5; i++)
     {
         var _geom = TomTom_PaletteGeometry(i);
         var _half = _geom.size * 0.5;
@@ -1196,8 +1197,8 @@ function TomTom_DrawMapOverlay(_m)
     Draw.Sprite(_spr_trash, 0, _trash.x, _trash.y, _tscale * 1.35, _tscale * 1.35, 0, c_white, _tover ? 0.85 : 0.45);
     Draw.Sprite(_spr_trash, 0, _trash.x, _trash.y, _tscale,         _tscale,         0, _tover ? c_red : c_white, 1.0);
 
-    // 3. Paleta com os 4 botões de marcadores
-    for(var b = 0; b < 4; b++)
+    // 3. Paleta com os 5 botões de marcadores (📍 📦 ❓ 💀 🌀)
+    for(var b = 0; b < 5; b++)
     {
         var _geom    = TomTom_PaletteGeometry(b);
         var _spr_pal = TomTom_PinSprite(b);
