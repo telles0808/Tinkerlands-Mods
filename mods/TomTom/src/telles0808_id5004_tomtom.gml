@@ -139,6 +139,7 @@ function TomTom_Create()
 
     // Map & Pins
     map_open             = false;
+    current_island       = "";
     pins                 = [];
     selected_pin         = -1;
     drag_active          = false;
@@ -605,13 +606,16 @@ function TomTom_Update()
         ? variable_instance_get(MY_PLAYER, "netRegion")
         : undefined;
 
-    if(_curr_reg != _m.last_region)
+    var _active_island = TomTom_GetIslandKey();
+    if(_curr_reg != _m.last_region || _active_island != _m.current_island)
     {
-        _m.last_region = _curr_reg;
-        _m.npcs        = [];
-        _m.mobs        = [];
-        _m.chests      = [];
-        _m.scan        = true;
+        _m.last_region     = _curr_reg;
+        _m.current_island  = _active_island;
+        _m.npcs            = [];
+        _m.mobs            = [];
+        _m.chests          = [];
+        _m.scan            = true;
+        TomTom_LoadPins(_m);
     }
 
     _m.tick++;
@@ -1673,29 +1677,58 @@ function TomTom_Draw()
 
 function TomTom_GetIslandKey()
 {
-    var _key = "main";
-    if(variable_global_exists("WORLD") && is_struct(WORLD))
-    {
-        var _is_random = (variable_struct_exists(WORLD, "isRandomIsland") && WORLD.isRandomIsland);
-        var _island_id = variable_struct_exists(WORLD, "islandID") ? string(WORLD.islandID) : "0";
+    var _key = "";
 
-        if(_is_random)
+    // 1. Checa se o jogador possui netRegion única (mudança de ilha/dimensão)
+    if(variable_global_exists("MY_PLAYER") && instance_exists(MY_PLAYER))
+    {
+        if(variable_instance_exists(MY_PLAYER, "netRegion"))
         {
-            var _seed = variable_struct_exists(WORLD, "seed") ? string(WORLD.seed) : "";
-            if(_seed != "")
-                _key = "rnd_" + _island_id + "_" + _seed;
-            else
-                _key = "rnd_" + _island_id;
-        }
-        else
-        {
-            _key = "island_" + _island_id;
+            var _reg = variable_instance_get(MY_PLAYER, "netRegion");
+            if(!is_undefined(_reg) && string(_reg) != "" && string(_reg) != "undefined")
+            {
+                _key = "reg_" + string(_reg);
+            }
         }
     }
-    else if(variable_global_exists("ISLAND_DATA") && is_struct(ISLAND_DATA))
+
+    // 2. Checa estrutura WORLD / isRandomIsland
+    if(_key == "" || _key == "reg_0")
     {
-        var _iid = variable_struct_exists(ISLAND_DATA, "islandID") ? string(ISLAND_DATA.islandID) : "0";
-        _key = "island_" + _iid;
+        if(variable_global_exists("WORLD") && is_struct(WORLD))
+        {
+            var _is_random = (variable_struct_exists(WORLD, "isRandomIsland") && WORLD.isRandomIsland);
+            var _island_id = variable_struct_exists(WORLD, "islandID") ? string(WORLD.islandID) : "";
+
+            if(_is_random)
+            {
+                var _seed = variable_struct_exists(WORLD, "seed") ? string(WORLD.seed) : "";
+                if(_seed != "")
+                    _key = "rnd_" + _island_id + "_" + _seed;
+                else if(_island_id != "")
+                    _key = "rnd_" + _island_id;
+            }
+            else if(_island_id != "" && _island_id != "0")
+            {
+                _key = "island_" + _island_id;
+            }
+        }
+    }
+
+    // 3. Checa estrutura global ISLAND_DATA se existir
+    if(_key == "" || _key == "reg_0")
+    {
+        if(variable_global_exists("ISLAND_DATA") && is_struct(ISLAND_DATA))
+        {
+            if(variable_struct_exists(ISLAND_DATA, "islandID") && string(ISLAND_DATA.islandID) != "0")
+                _key = "island_" + string(ISLAND_DATA.islandID);
+        }
+    }
+
+    // 4. Se ainda não identificado e não for ilha secundária
+    if(_key == "")
+    {
+        _key = "island_0";
     }
 
     return _key;
@@ -1850,8 +1883,11 @@ function TomTom_LoadPins(_m)
         var _pt_str = (_p3 > 1) ? string_copy(_t2, 1, _p3 - 1) : _t2;
         var _island_str = (_p3 > 1) ? string_delete(_t2, 1, _p3) : "island_0";
 
-        // Se o pin pertence a esta ilha (ou é legado sem tag de ilha e estamos na ilha principal)
-        if(_island_str == _current_island || (_p3 <= 1 && _current_island == "island_0"))
+        // Se o pin pertence a esta ilha (ou é legado sem tag ou tag 'main' e estamos na ilha principal)
+        var _is_main_pin = (_island_str == "island_0" || _island_str == "main" || _p3 <= 1);
+        var _is_main_now = (_current_island == "island_0" || _current_island == "main" || _current_island == "reg_0");
+
+        if(_island_str == _current_island || (_is_main_pin && _is_main_now))
         {
             array_push(_m.pins, {
                 map_x: real(_px_str),
