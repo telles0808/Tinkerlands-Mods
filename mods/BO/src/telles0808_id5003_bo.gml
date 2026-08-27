@@ -1321,66 +1321,25 @@ function BO_ItemCategoryBit(_item)
         return 16; // Munições / Arremessáveis
     }
 
+    // 3. Currency / Coins / Money (Bit 32 - Botão da Moeda de Ouro)
+    // Puxa estritamente moedas e dinheiro
     if(
         _type_lower == "currency" || _subtype_lower == "currency"
-        || _type_lower == "map" || _subtype_lower == "map"
-        || _type_lower == "recipe" || _subtype_lower == "recipe"
-        || _type_lower == "summon" || _subtype_lower == "summon"
-        || _type_lower == "key" || _subtype_lower == "key"
-    )
-    {
-        return 32; // Miscelânea / Moedas / Chaves
-    }
-
-    if(
-        _type_lower == "building" || _subtype_lower == "building"
-        || _type_lower == "floor" || _subtype_lower == "floor"
-        || _type_lower == "storage" || _subtype_lower == "storage"
-        || _type_lower == "crafting table" || _subtype_lower == "crafting table"
-        || _type_lower == "cable" || _subtype_lower == "cable"
-    )
-    {
-        return 2; // Construção / Mobília
-    }
-
-    if(
-        _type_lower == "ingredient" || _subtype_lower == "ingredient"
-        || _type_lower == "spice" || _subtype_lower == "spice"
-        || _type_lower == "fish" || _subtype_lower == "fish"
-    )
-    {
-        return 1; // Recursos / Materiais
-    }
-
-    // 3. HIGHEST KEYWORD PRIORITY: Miscellaneous, Keys, Tickets, Scrolls, Coins, Valuables (Bit 32)
-    // MUST BE CHECKED BEFORE METALS (Prevents "golden key" or "gold ticket" matching "gold" as resource!)
-    if(
-        string_pos("key", _combined) > 0
-        || string_pos("chave", _combined) > 0
-        || string_pos("ticket", _combined) > 0
-        || string_pos("scroll", _combined) > 0
-        || string_pos("pergaminho", _combined) > 0
-        || string_pos("recipe", _combined) > 0
-        || string_pos("receita", _combined) > 0
-        || string_pos("blueprint", _combined) > 0
-        || string_pos("map", _combined) > 0
-        || string_pos("mapa", _combined) > 0
         || string_pos("coin", _combined) > 0
         || string_pos("moeda", _combined) > 0
-        || string_pos("token", _combined) > 0
-        || string_pos("relic", _combined) > 0
-        || string_pos("reliquia", _combined) > 0
-        || string_pos("trophy", _combined) > 0
-        || string_pos("badge", _combined) > 0
-        || string_pos("document", _combined) > 0
-        || string_pos("letter", _combined) > 0
-        || string_pos("wallet", _combined) > 0
+        || string_pos("money", _combined) > 0
+        || string_pos("dinheiro", _combined) > 0
+        || string_pos("gold_coin", _id_str) > 0
+        || string_pos("silver_coin", _id_str) > 0
+        || string_pos("copper_coin", _id_str) > 0
+        || string_pos("platinum_coin", _id_str) > 0
+        || string_pos("dobloon", _id_str) > 0
     )
     {
-        return 32;
+        return 32; // Moedas / Dinheiro
     }
 
-    // 4. Equipment / Weapons / Tools / Accessories / Pets / Mounts (Bit 8)
+    // 4. Equipment / Weapons / Tools / Accessories / Pets / Mounts (Bit 8 - Botão do Escudo)
     // Palavras-chave prioritárias: Acessórios e Mascotes têm precedência sobre materiais
     if(
         string_pos("accesory", _combined) > 0
@@ -1397,6 +1356,9 @@ function BO_ItemCategoryBit(_item)
         || string_pos("anel", _combined) > 0
         || string_pos("amulet", _combined) > 0
         || string_pos("amuleto", _combined) > 0
+        || string_pos("pin", _combined) > 0
+        || string_pos("bracelet", _combined) > 0
+        || string_pos("cufflinks", _combined) > 0
         || string_pos("sword", _combined) > 0
         || string_pos("espada", _combined) > 0
         || string_pos("pickaxe", _combined) > 0
@@ -1421,6 +1383,8 @@ function BO_ItemCategoryBit(_item)
         || string_pos("armadura", _combined) > 0
         || string_pos("boots", _combined) > 0
         || string_pos("bota", _combined) > 0
+        || string_pos("pants", _combined) > 0
+        || string_pos("calca", _combined) > 0
         || string_pos("compass", _combined) > 0
         || string_pos("bussola", _combined) > 0
         || string_pos("sonar", _combined) > 0
@@ -1430,12 +1394,17 @@ function BO_ItemCategoryBit(_item)
         || string_pos("bolsa", _combined) > 0
         || string_pos("fishing", _combined) > 0
         || string_pos("pesca", _combined) > 0
+        || string_pos("goggles", _combined) > 0
+        || string_pos("scarf", _combined) > 0
+        || string_pos("monocle", _combined) > 0
+        || string_pos("talisman", _combined) > 0
+        || string_pos("rosary", _combined) > 0
     )
     {
         return 8;
     }
 
-    // 4. Consumables / Potions / Food / Drinks / Flasks (Bit 4)
+    // 5. Consumables / Potions / Food / Drinks / Flasks (Bit 4 - Botão da Poção)
     if(
         string_pos("potion", _combined) > 0
         || string_pos("pocao", _combined) > 0
@@ -1466,7 +1435,7 @@ function BO_ItemCategoryBit(_item)
         return 4;
     }
 
-    // 5. Ammo / Throwables (Bit 16)
+    // 6. Ammo / Throwables (Bit 16 - Botão da Flecha)
     if(
         string_pos("arrow", _combined) > 0
         || string_pos("flecha", _combined) > 0
@@ -1486,7 +1455,7 @@ function BO_ItemCategoryBit(_item)
         return 16;
     }
 
-    // 6. Building / Furniture / Construction (Bit 2)
+    // 7. Building / Furniture / Construction (Bit 2 - Botão da Parede de Pedra)
     if(
         string_pos("wall", _combined) > 0
         || string_pos("parede", _combined) > 0
@@ -1522,9 +1491,11 @@ function BO_ItemCategoryBit(_item)
         return 2;
     }
 
-    // 7. True Raw Resources / Materials (Bit 1)
+    // 8. True Raw Resources / Materials (Bit 1 - Botão da Madeira)
+    // Se o tipo primário for Material ou contiver palavras-chave de recurso
     if(
-        string_pos("wood", _combined) > 0
+        _type_lower == "material" || _subtype_lower == "material"
+        || string_pos("wood", _combined) > 0
         || string_pos("madeira", _combined) > 0
         || string_pos("log", _combined) > 0
         || string_pos("tora", _combined) > 0
@@ -1618,11 +1589,36 @@ function BO_ItemCategoryBit(_item)
         || string_pos("polen", _combined) > 0
     )
     {
-        return 1;
+        return 1; // Recursos / Materiais
     }
 
-    // Default for everything else (Scrolls, Keys, Maps, Recipes, Uncategorized Etc) -> Category 32 (Miscelânea)
-    return 32;
+    // 9. Miscelânea restante (Pergaminhos, Chaves, Mapas, Etc genérico)
+    if(
+        string_pos("key", _combined) > 0
+        || string_pos("chave", _combined) > 0
+        || string_pos("ticket", _combined) > 0
+        || string_pos("scroll", _combined) > 0
+        || string_pos("pergaminho", _combined) > 0
+        || string_pos("recipe", _combined) > 0
+        || string_pos("receita", _combined) > 0
+        || string_pos("blueprint", _combined) > 0
+        || string_pos("map", _combined) > 0
+        || string_pos("mapa", _combined) > 0
+        || string_pos("token", _combined) > 0
+        || string_pos("relic", _combined) > 0
+        || string_pos("reliquia", _combined) > 0
+        || string_pos("trophy", _combined) > 0
+        || string_pos("badge", _combined) > 0
+        || string_pos("document", _combined) > 0
+        || string_pos("letter", _combined) > 0
+        || string_pos("wallet", _combined) > 0
+    )
+    {
+        return 32;
+    }
+
+    // Default para itens sem categoria específica: retorna 1 se parecer material, ou 0 para não puxar aleatoriamente
+    return 0;
 }
 
 
