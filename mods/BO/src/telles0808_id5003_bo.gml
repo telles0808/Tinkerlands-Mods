@@ -1282,53 +1282,77 @@ function BO_ItemCategoryBit(_item)
     }
 
     var _type = ds_map_exists(_item, 7) ? string(_item[? 7]) : "";
+    var _subtype = ds_map_exists(_item, 8) ? string(_item[? 8]) : "";
     var _id_str = ds_map_exists(_item, 0) ? string_lower(string(_item[? 0])) : "";
     var _name_str = ds_map_exists(_item, 1) ? string_lower(string(_item[? 1])) : "";
-    var _combined = _id_str + " " + _name_str;
+    var _desc_str = ds_map_exists(_item, 2) ? string_lower(string(_item[? 2])) : "";
+    var _combined = _id_str + " " + _name_str + " " + string_lower(_type) + " " + string_lower(_subtype) + " " + _desc_str;
 
-    // 1. Explicit native types
-    switch(_type)
+    // 1. Prioridade Absoluta por Tipo/Subtipo: Equipamentos, Acessórios, Mascotes e Armas
+    // (Garante que "Material > Acessório" ou Mascotes sejam categorizados como Equipamento e não como Minério)
+    var _type_lower = string_lower(_type);
+    var _subtype_lower = string_lower(_subtype);
+
+    if(
+        _type_lower == "weapon" || _subtype_lower == "weapon"
+        || _type_lower == "tool" || _subtype_lower == "tool"
+        || _type_lower == "accesory" || _subtype_lower == "accesory"
+        || _type_lower == "accessory" || _subtype_lower == "accessory"
+        || _type_lower == "head" || _subtype_lower == "head"
+        || _type_lower == "body" || _subtype_lower == "body"
+        || _type_lower == "legs" || _subtype_lower == "legs"
+        || _type_lower == "hook" || _subtype_lower == "hook"
+        || _type_lower == "fishing rod" || _subtype_lower == "fishing rod"
+        || _type_lower == "pet" || _subtype_lower == "pet"
+        || _type_lower == "mount" || _subtype_lower == "mount"
+    )
     {
-        case "Ingredient":
-        case "Spice":
-        case "Fish":
-            return 1; // Recursos / Materiais
-
-        case "Building":
-        case "Floor":
-        case "Storage":
-        case "Crafting Table":
-        case "Cable":
-            return 2; // Construção / Mobília
-
-        case "Usable":
-            return 4; // Poções / Comidas / Consumíveis
-
-        case "Weapon":
-        case "Tool":
-        case "Accesory":
-        case "Accessory":
-        case "Head":
-        case "Body":
-        case "Legs":
-        case "Hook":
-        case "Fishing Rod":
-        case "Pet":
-            return 8; // Equipamentos / Acessórios
-
-        case "Ammo":
-        case "Throwable":
-            return 16; // Munições / Arremessáveis
-
-        case "Currency":
-        case "Map":
-        case "Recipe":
-        case "Summon":
-        case "Key":
-            return 32; // Miscelânea / Moedas / Chaves
+        return 8; // Equipamentos / Acessórios / Mascotes
     }
 
-    // 2. HIGHEST KEYWORD PRIORITY: Miscellaneous, Keys, Tickets, Scrolls, Coins, Valuables (Bit 32)
+    // 2. Outros Tipos Nativos Explícitos
+    if(_type_lower == "usable" || _subtype_lower == "usable")
+    {
+        return 4; // Poções / Consumíveis
+    }
+
+    if(_type_lower == "ammo" || _subtype_lower == "ammo" || _type_lower == "throwable" || _subtype_lower == "throwable")
+    {
+        return 16; // Munições / Arremessáveis
+    }
+
+    if(
+        _type_lower == "currency" || _subtype_lower == "currency"
+        || _type_lower == "map" || _subtype_lower == "map"
+        || _type_lower == "recipe" || _subtype_lower == "recipe"
+        || _type_lower == "summon" || _subtype_lower == "summon"
+        || _type_lower == "key" || _subtype_lower == "key"
+    )
+    {
+        return 32; // Miscelânea / Moedas / Chaves
+    }
+
+    if(
+        _type_lower == "building" || _subtype_lower == "building"
+        || _type_lower == "floor" || _subtype_lower == "floor"
+        || _type_lower == "storage" || _subtype_lower == "storage"
+        || _type_lower == "crafting table" || _subtype_lower == "crafting table"
+        || _type_lower == "cable" || _subtype_lower == "cable"
+    )
+    {
+        return 2; // Construção / Mobília
+    }
+
+    if(
+        _type_lower == "ingredient" || _subtype_lower == "ingredient"
+        || _type_lower == "spice" || _subtype_lower == "spice"
+        || _type_lower == "fish" || _subtype_lower == "fish"
+    )
+    {
+        return 1; // Recursos / Materiais
+    }
+
+    // 3. HIGHEST KEYWORD PRIORITY: Miscellaneous, Keys, Tickets, Scrolls, Coins, Valuables (Bit 32)
     // MUST BE CHECKED BEFORE METALS (Prevents "golden key" or "gold ticket" matching "gold" as resource!)
     if(
         string_pos("key", _combined) > 0
@@ -1356,9 +1380,24 @@ function BO_ItemCategoryBit(_item)
         return 32;
     }
 
-    // 3. Equipment / Weapons / Tools / Accessories (Bit 8)
+    // 4. Equipment / Weapons / Tools / Accessories / Pets / Mounts (Bit 8)
+    // Palavras-chave prioritárias: Acessórios e Mascotes têm precedência sobre materiais
     if(
-        string_pos("sword", _combined) > 0
+        string_pos("accesory", _combined) > 0
+        || string_pos("accessory", _combined) > 0
+        || string_pos("acessorio", _combined) > 0
+        || string_pos("pet", _combined) > 0
+        || string_pos("mascote", _combined) > 0
+        || string_pos("mount", _combined) > 0
+        || string_pos("montaria", _combined) > 0
+        || string_pos("trinket", _combined) > 0
+        || string_pos("necklace", _combined) > 0
+        || string_pos("colar", _combined) > 0
+        || string_pos("ring", _combined) > 0
+        || string_pos("anel", _combined) > 0
+        || string_pos("amulet", _combined) > 0
+        || string_pos("amuleto", _combined) > 0
+        || string_pos("sword", _combined) > 0
         || string_pos("espada", _combined) > 0
         || string_pos("pickaxe", _combined) > 0
         || string_pos("picareta", _combined) > 0
@@ -1382,10 +1421,6 @@ function BO_ItemCategoryBit(_item)
         || string_pos("armadura", _combined) > 0
         || string_pos("boots", _combined) > 0
         || string_pos("bota", _combined) > 0
-        || string_pos("ring", _combined) > 0
-        || string_pos("anel", _combined) > 0
-        || string_pos("amulet", _combined) > 0
-        || string_pos("amuleto", _combined) > 0
         || string_pos("compass", _combined) > 0
         || string_pos("bussola", _combined) > 0
         || string_pos("sonar", _combined) > 0
