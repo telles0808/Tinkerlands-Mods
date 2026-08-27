@@ -16,6 +16,46 @@ OnIslandArrive(function()
 
     if(_m != undefined)
     {
+        _m.is_main_island = false;
+        _m.npcs        = [];
+        _m.mobs        = [];
+        _m.chests      = [];
+        _m.scan        = true;
+        _m.last_region = undefined;
+        _m.map_open    = false;
+        _m.drag_active = false;
+        TomTom_EnsureDefaults(_m);
+        TomTom_LoadPins(_m);
+    }
+});
+
+OnIslandFirstArrive(function()
+{
+    var _m = ModInstance.Get("TomTom");
+
+    if(_m != undefined)
+    {
+        _m.is_main_island = false;
+        _m.npcs        = [];
+        _m.mobs        = [];
+        _m.chests      = [];
+        _m.scan        = true;
+        _m.last_region = undefined;
+        _m.map_open    = false;
+        _m.drag_active = false;
+        TomTom_EnsureDefaults(_m);
+        TomTom_LoadPins(_m);
+    }
+});
+
+OnMainIslandArrive(function()
+{
+    var _m = ModInstance.Get("TomTom");
+
+    if(_m != undefined)
+    {
+        _m.is_main_island = true;
+        _m.current_island = "island_main";
         _m.npcs        = [];
         _m.mobs        = [];
         _m.chests      = [];
@@ -1114,19 +1154,22 @@ function TomTom_MapInput(_m)
         // Coordenadas exatas do terreno do mapa
         var _map_x = (_mx - _left) / _scale;
         var _map_y = (_my - _top)  / _scale;
+        var _cur_reg = (variable_instance_exists(MY_PLAYER, "netRegion") && !is_undefined(MY_PLAYER.netRegion)) ? MY_PLAYER.netRegion : 0;
 
         if(_m.drag_pin_idx >= 0 && _m.drag_pin_idx < array_length(_m.pins))
         {
             var _ep = _m.pins[_m.drag_pin_idx];
             _ep.map_x = _map_x;
             _ep.map_y = _map_y;
+            _ep.region = _cur_reg;
         }
         else
         {
             array_push(_m.pins, {
-                map_x: _map_x,
-                map_y: _map_y,
-                type:  _m.drag_type
+                map_x:  _map_x,
+                map_y:  _map_y,
+                type:   _m.drag_type,
+                region: _cur_reg
             });
             _m.selected_pin = array_length(_m.pins) - 1;
         }
@@ -1149,6 +1192,8 @@ function TomTom_DrawMapOverlay(_m)
     var _left  = _mini.x;
     var _top   = _mini.y;
     var _scale = _mini.scale;
+    var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
+    var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : 0;
 
     // 1. Marcadores no canvas do mapa
     for(var i = 0; i < array_length(_m.pins); i++)
@@ -1156,7 +1201,13 @@ function TomTom_DrawMapOverlay(_m)
         if(_m.drag_active && _m.drag_pin_idx == i)
             continue;
 
-        var _p      = _m.pins[i];
+        var _p = _m.pins[i];
+
+        // Isola caverna de superfície: pin da caverna só aparece na caverna, e vice-versa
+        var _pin_reg = variable_struct_exists(_p, "region") ? _p.region : 0;
+        if(_has_p_reg && _pin_reg != _p_reg)
+            continue;
+
         var _psx    = _left + _p.map_x * _scale;
         var _psy    = _top  + _p.map_y * _scale;
         var _spr    = TomTom_PinSprite(_p.type);
@@ -1518,7 +1569,13 @@ function TomTom_DrawMinimapRadar(_m)
     {
         for(var i = 0; i < array_length(_m.pins); i++)
         {
-            var _pin     = _m.pins[i];
+            var _pin = _m.pins[i];
+
+            // Isola caverna de superfície: pin da caverna só aparece no minimapa da caverna
+            var _pin_reg = variable_struct_exists(_pin, "region") ? _pin.region : 0;
+            if(_has_p_reg && _pin_reg != _p_reg)
+                continue;
+
             var _world_x = _pin.map_x * _tile;
             var _world_y = _pin.map_y * _tile;
 
@@ -1635,7 +1692,13 @@ function TomTom_Draw()
             // Pins de Mapa (0=POI, 1=Storage, 2=Question, 3=Boss, 4=Death) -> Tipo 1
             for(var i = 0; i < array_length(_m.pins); i++)
             {
-                var _pin     = _m.pins[i];
+                var _pin = _m.pins[i];
+
+                // Isola caverna de superfície: TomTom só aponta para pins na mesma dimensão/região
+                var _pin_reg = variable_struct_exists(_pin, "region") ? _pin.region : 0;
+                if(_has_p_reg && _pin_reg != _p_reg)
+                    continue;
+
                 var _world_x = _pin.map_x * _tile;
                 var _world_y = _pin.map_y * _tile;
 
@@ -1677,61 +1740,87 @@ function TomTom_Draw()
 
 function TomTom_GetIslandKey()
 {
-    var _key = "";
+    var _m = ModInstance.Get("TomTom");
 
-    // 1. Checa se o jogador possui netRegion única (mudança de ilha/dimensão)
+    // 1. Tenta chamar ship_nav_get_random_island_id diretamente da engine
+    var _nav_fn = asset_get_index("ship_nav_get_random_island_id");
+    if(_nav_fn >= 0)
+    {
+        var _rnd_id = script_execute(_nav_fn);
+        if(!is_undefined(_rnd_id) && _rnd_id != -1 && _rnd_id != 0 && string(_rnd_id) != "" && string(_rnd_id) != "0")
+        {
+            return "rnd_" + string(_rnd_id);
+        }
+    }
+
+    // 2. Se o lifecycle marcou como ilha secundária ou não-principal
+    if(_m != undefined && variable_instance_exists(_m, "is_main_island") && !_m.is_main_island)
+    {
+        // Checa variáveis em objWorldController
+        if(instance_exists(objWorldController))
+        {
+            var _wc = instance_find(objWorldController, 0);
+            if(variable_instance_exists(_wc, "islandID") && string(_wc.islandID) != "" && string(_wc.islandID) != "0")
+                return "rnd_" + string(_wc.islandID);
+            if(variable_instance_exists(_wc, "randomIslandID") && string(_wc.randomIslandID) != "" && string(_wc.randomIslandID) != "0")
+                return "rnd_" + string(_wc.randomIslandID);
+        }
+
+        // Checa struct WORLD
+        if(variable_global_exists("WORLD") && is_struct(WORLD))
+        {
+            if(variable_struct_exists(WORLD, "islandID") && string(WORLD.islandID) != "" && string(WORLD.islandID) != "0")
+                return "rnd_" + string(WORLD.islandID);
+            if(variable_struct_exists(WORLD, "randomIslandID") && string(WORLD.randomIslandID) != "" && string(WORLD.randomIslandID) != "0")
+                return "rnd_" + string(WORLD.randomIslandID);
+        }
+
+        // Checa struct ISLAND_DATA
+        if(variable_global_exists("ISLAND_DATA") && is_struct(ISLAND_DATA))
+        {
+            if(variable_struct_exists(ISLAND_DATA, "islandID") && string(ISLAND_DATA.islandID) != "" && string(ISLAND_DATA.islandID) != "0")
+                return "rnd_" + string(ISLAND_DATA.islandID);
+        }
+
+        return "rnd_expedition";
+    }
+
+    // 3. Checa estrutura WORLD / isRandomIsland
+    if(variable_global_exists("WORLD") && is_struct(WORLD))
+    {
+        var _is_random = (variable_struct_exists(WORLD, "isRandomIsland") && WORLD.isRandomIsland);
+        var _island_id = variable_struct_exists(WORLD, "islandID") ? string(WORLD.islandID) : "";
+
+        if(_is_random)
+        {
+            var _seed = variable_struct_exists(WORLD, "seed") ? string(WORLD.seed) : "";
+            if(_seed != "")
+                return "rnd_" + _island_id + "_" + _seed;
+            else if(_island_id != "")
+                return "rnd_" + _island_id;
+            else
+                return "rnd_island";
+        }
+        else if(_island_id != "" && _island_id != "0")
+        {
+            return "island_" + _island_id;
+        }
+    }
+
+    // 4. Checa se o jogador possui netRegion
     if(variable_global_exists("MY_PLAYER") && instance_exists(MY_PLAYER))
     {
         if(variable_instance_exists(MY_PLAYER, "netRegion"))
         {
             var _reg = variable_instance_get(MY_PLAYER, "netRegion");
-            if(!is_undefined(_reg) && string(_reg) != "" && string(_reg) != "undefined")
+            if(!is_undefined(_reg) && _reg != 0 && string(_reg) != "0" && string(_reg) != "" && string(_reg) != "undefined")
             {
-                _key = "reg_" + string(_reg);
+                return "reg_" + string(_reg);
             }
         }
     }
 
-    // 2. Checa estrutura WORLD / isRandomIsland
-    if(_key == "" || _key == "reg_0")
-    {
-        if(variable_global_exists("WORLD") && is_struct(WORLD))
-        {
-            var _is_random = (variable_struct_exists(WORLD, "isRandomIsland") && WORLD.isRandomIsland);
-            var _island_id = variable_struct_exists(WORLD, "islandID") ? string(WORLD.islandID) : "";
-
-            if(_is_random)
-            {
-                var _seed = variable_struct_exists(WORLD, "seed") ? string(WORLD.seed) : "";
-                if(_seed != "")
-                    _key = "rnd_" + _island_id + "_" + _seed;
-                else if(_island_id != "")
-                    _key = "rnd_" + _island_id;
-            }
-            else if(_island_id != "" && _island_id != "0")
-            {
-                _key = "island_" + _island_id;
-            }
-        }
-    }
-
-    // 3. Checa estrutura global ISLAND_DATA se existir
-    if(_key == "" || _key == "reg_0")
-    {
-        if(variable_global_exists("ISLAND_DATA") && is_struct(ISLAND_DATA))
-        {
-            if(variable_struct_exists(ISLAND_DATA, "islandID") && string(ISLAND_DATA.islandID) != "0")
-                _key = "island_" + string(ISLAND_DATA.islandID);
-        }
-    }
-
-    // 4. Se ainda não identificado e não for ilha secundária
-    if(_key == "")
-    {
-        _key = "island_0";
-    }
-
-    return _key;
+    return "island_main";
 }
 
 function TomTom_SavePins(_m)
@@ -1788,15 +1877,17 @@ function TomTom_SavePins(_m)
         string(_m.track_mobs ? 1 : 0));
     file_text_writeln(_file);
 
-    // Linhas dos marcadores da ilha atual: X|Y|TYPE|ISLAND_KEY
+    // Linhas dos marcadores da ilha atual: X|Y|TYPE|ISLAND_KEY|REGION
     for(var i = 0; i < array_length(_m.pins); i++)
     {
         var _p = _m.pins[i];
+        var _preg = variable_struct_exists(_p, "region") ? string(_p.region) : "0";
         file_text_write_string(_file,
             string(_p.map_x) + "|" +
             string(_p.map_y) + "|" +
             string(_p.type) + "|" +
-            _current_island);
+            _current_island + "|" +
+            _preg);
         file_text_writeln(_file);
     }
 
@@ -1866,7 +1957,7 @@ function TomTom_LoadPins(_m)
             continue;
         }
 
-        // Linha de Marcador: X|Y|TYPE ou X|Y|TYPE|ISLAND_KEY
+        // Linha de Marcador: X|Y|TYPE ou X|Y|TYPE|ISLAND_KEY ou X|Y|TYPE|ISLAND_KEY|REGION
         var _p1 = string_pos("|", _line);
         if(_p1 <= 1) continue;
 
@@ -1881,18 +1972,23 @@ function TomTom_LoadPins(_m)
 
         var _p3 = string_pos("|", _t2);
         var _pt_str = (_p3 > 1) ? string_copy(_t2, 1, _p3 - 1) : _t2;
-        var _island_str = (_p3 > 1) ? string_delete(_t2, 1, _p3) : "island_0";
+        var _rest   = (_p3 > 1) ? string_delete(_t2, 1, _p3) : "island_main";
 
-        // Se o pin pertence a esta ilha (ou é legado sem tag ou tag 'main' e estamos na ilha principal)
-        var _is_main_pin = (_island_str == "island_0" || _island_str == "main" || _p3 <= 1);
-        var _is_main_now = (_current_island == "island_0" || _current_island == "main" || _current_island == "reg_0");
+        var _p4 = string_pos("|", _rest);
+        var _island_str = (_p4 > 1) ? string_copy(_rest, 1, _p4 - 1) : _rest;
+        var _region_str = (_p4 > 1) ? string_delete(_rest, 1, _p4) : "0";
+
+        // Se o pin pertence a esta ilha (ou é legado sem tag ou tag 'main'/'island_0' e estamos na ilha principal)
+        var _is_main_pin = (_island_str == "island_0" || _island_str == "main" || _island_str == "island_main" || _p3 <= 1);
+        var _is_main_now = (_current_island == "island_0" || _current_island == "main" || _current_island == "island_main");
 
         if(_island_str == _current_island || (_is_main_pin && _is_main_now))
         {
             array_push(_m.pins, {
-                map_x: real(_px_str),
-                map_y: real(_py_str),
-                type:  real(_pt_str)
+                map_x:  real(_px_str),
+                map_y:  real(_py_str),
+                type:   real(_pt_str),
+                region: real(_region_str)
             });
         }
     }
