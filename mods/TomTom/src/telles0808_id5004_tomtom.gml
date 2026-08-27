@@ -347,9 +347,6 @@ function TomTom_NPCAdd(_npc)
         }
     }
 
-    if(variable_instance_exists(_npc, "visible") && !_npc.visible)
-        return;
-
     var _m = ModInstance.Get("TomTom");
     if(_m == undefined) return;
 
@@ -379,63 +376,103 @@ function TomTom_NPCResolve(_npc)
 
 function TomTom_GetNPCName(_npc)
 {
-    if(variable_instance_exists(_npc, "npcName"))
+    var _candidates = ["npcName", "npc_name", "displayName", "display_name", "name", "entityName", "refNPC"];
+    for(var c = 0; c < array_length(_candidates); c++)
     {
-        var _v = variable_instance_get(_npc, "npcName");
-        if(TomTom_ValidName(_v)) return string(_v);
+        if(variable_instance_exists(_npc, _candidates[c]))
+        {
+            var _v = variable_instance_get(_npc, _candidates[c]);
+            if(TomTom_ValidName(_v)) return string(_v);
+        }
     }
-    if(variable_instance_exists(_npc, "name"))
+
+    if(variable_instance_exists(_npc, "npcID") && is_numeric(_npc.npcID))
     {
-        var _v2 = variable_instance_get(_npc, "name");
-        if(TomTom_ValidName(_v2)) return string(_v2);
+        switch(round(_npc.npcID))
+        {
+            case 0:  return "Guia";
+            case 1:  return "Ferreiro";
+            case 3:  return "Mercador";
+            case 4:  return "Vendedor Ambulante";
+            case 5:  return "Bardo";
+            case 6:  return "Bruxa";
+            case 8:  return "Minerador";
+            case 9:  return "Fazendeiro";
+            case 10: return "Carpinteiro";
+            case 11: return "Esqueleto";
+            case 12: return "Chef";
+            case 13: return "Pescador";
+            case 14: return "Invocador";
+            case 15: return "Eletricista";
+            case 18: return "Estilista";
+            case 19: return "Fantasma";
+            case 21: return "Cartografo";
+            case 22: return "Michael";
+            case 23: return "Gizmo";
+            case 24: return "Goggs";
+            case 25: return "Gumns";
+            case 26: return "Enfermeira";
+            case 27: return "Bibliotecario";
+            case 28: return "Robo";
+            case 29: return "Pinguim";
+            case 30: return "Encantadora";
+        }
     }
-    return "";
+
+    return "NPC";
 }
 
 function TomTom_GetPortrait(_npc)
 {
-    if(!variable_instance_exists(_npc, "npcID")) return -1;
-    var _id = variable_instance_get(_npc, "npcID");
-    if(!is_numeric(_id)) return -1;
-
-    switch(_id)
+    if(variable_instance_exists(_npc, "npcID"))
     {
-        case 0:  return sprNPCPortraitGuide;
-        case 1:  return sprNPCPortraitBlacksmith;
-        case 3:  return sprNPCPortraitMerchant;
-        case 4:  return sprNPCPortraitWanderingMerchant;
-        case 5:  return sprNPCPortraitBard;
-        case 6:  return sprNPCPortraitWitch;
-        case 8:  return sprNPCPortraitMiner;
-        case 9:  return sprNPCPortraitFarmer;
-        case 10: return sprNPCPortraitCarpenter;
-        case 11: return sprNPCPortraitSkeleton;
-        case 12: return sprNPCPortraitChef;
-        case 13: return sprNPCPortraitFisherman;
-        case 14: return sprNPCPortraitSummoner;
-        case 15: return sprNPCPortraitElectrician;
-        case 18: return sprNPCPortraitStylish;
-        case 19: return sprNPCPortraitGhost;
-        case 21: return sprNPCPortraitCartographer;
-        case 22: return sprNPCPortraitMichael;
-        case 23: return sprNPCPortraitGizmo;
-        case 24: return sprNPCPortraitGoggs;
-        case 25: return sprNPCPortraitGumns;
-        case 26: return sprNPCPortraitNurse;
-        case 27: return sprNPCPortraitLibrarian;
-        case 28: return sprNPCPortraitRobot;
-        case 29: return sprNPCPortraitPenguin;
-        case 30: return sprNPCPortraitEnchantress;
-        case 31: return sprNPCPortraitDryad04;
-        case 32: return sprNPCPortraitDryad02;
-        case 33: return sprNPCPortraitDryad03;
-        case 34: return sprNPCPortraitDryad01;
-        case 35: return sprNPCPortraitLoonaru01;
-        case 36: return sprNPCPortraitLoonaru02;
-        case 37: return sprNPCPortraitLoonaru03;
-        case 38: return sprNPCPortraitLoonaru04;
+        var _id = variable_instance_get(_npc, "npcID");
+        if(is_numeric(_id))
+        {
+            switch(round(_id))
+            {
+                case 0:  return sprNPCPortraitGuide;
+                case 1:  return sprNPCPortraitBlacksmith;
+                case 3:  return sprNPCPortraitMerchant;
+                case 4:  return sprNPCPortraitWanderingMerchant;
+                case 5:  return sprNPCPortraitBard;
+                case 6:  return sprNPCPortraitWitch;
+                case 8:  return sprNPCPortraitMiner;
+                case 9:  return sprNPCPortraitFarmer;
+                case 10: return sprNPCPortraitCarpenter;
+                case 11: return sprNPCPortraitSkeleton;
+                case 12: return sprNPCPortraitChef;
+                case 13: return sprNPCPortraitFisherman;
+                case 14: return sprNPCPortraitSummoner;
+                case 15: return sprNPCPortraitElectrician;
+                case 18: return sprNPCPortraitStylish;
+                case 19: return sprNPCPortraitGhost;
+                case 21: return sprNPCPortraitCartographer;
+                case 22: return sprNPCPortraitMichael;
+                case 23: return sprNPCPortraitGizmo;
+                case 24: return sprNPCPortraitGoggs;
+                case 25: return sprNPCPortraitGumns;
+                case 26: return sprNPCPortraitNurse;
+                case 27: return sprNPCPortraitLibrarian;
+                case 28: return sprNPCPortraitRobot;
+                case 29: return sprNPCPortraitPenguin;
+                case 30: return sprNPCPortraitEnchantress;
+                case 31: return sprNPCPortraitDryad04;
+                case 32: return sprNPCPortraitDryad02;
+                case 33: return sprNPCPortraitDryad03;
+                case 34: return sprNPCPortraitDryad01;
+                case 35: return sprNPCPortraitLoonaru01;
+                case 36: return sprNPCPortraitLoonaru02;
+                case 37: return sprNPCPortraitLoonaru03;
+                case 38: return sprNPCPortraitLoonaru04;
+            }
+        }
     }
-    return -1;
+
+    if(variable_instance_exists(_npc, "sprite_index") && sprite_exists(_npc.sprite_index))
+        return _npc.sprite_index;
+
+    return sprNPCPortraitGuide;
 }
 
 function TomTom_GetMobName(_mob)
@@ -576,16 +613,31 @@ function TomTom_Update()
         _m.scan        = true;
     }
 
-    if(_m.scan)
-    {
-        _m.scan = false;
-        with(objNPC) { TomTom_NPCAdd(id); }
-    }
-
     _m.tick++;
-    if(_m.tick >= 15)
+    if(_m.tick >= 10 || _m.scan)
     {
         _m.tick = 0;
+        _m.scan = false;
+
+        // Escaneia todas as instâncias ativas de NPCs no mundo
+        var _npc_classes = ["objNPC", "objInteractableNPC", "objNPCMerchant", "objWanderingMerchant"];
+        for(var nc = 0; nc < array_length(_npc_classes); nc++)
+        {
+            var _casset = asset_get_index(_npc_classes[nc]);
+            if(_casset >= 0)
+            {
+                var _ncount = instance_number(_casset);
+                for(var ni = 0; ni < _ncount; ni++)
+                {
+                    var _ninst = instance_find(_casset, ni);
+                    if(instance_exists(_ninst))
+                    {
+                        TomTom_NPCAdd(_ninst);
+                    }
+                }
+            }
+        }
+
         var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
         var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
 
@@ -607,16 +659,10 @@ function TomTom_Update()
                 }
             }
 
-            if(variable_instance_exists(_n.inst, "visible") && !_n.inst.visible)
-            {
-                array_delete(_m.npcs, i, 1);
-                continue;
-            }
-
             _n.x = _n.inst.x;
             _n.y = _n.inst.y;
 
-            if((_n.name == "" || _n.sprite == -1) && _n.tries < 20)
+            if((_n.name == "" || _n.name == "NPC" || _n.sprite == -1) && _n.tries < 20)
             {
                 _n.tries++;
                 var _id = TomTom_NPCResolve(_n.inst);
@@ -800,7 +846,7 @@ function TomTom_ButtonGeometry()
     var _gw    = display_get_gui_width();
 
     var _base_x = _gw - round(100 * _ratio);
-    var _base_y = round(305 * _ratio);
+    var _base_y = round(335 * _ratio);
 
     // Sonar Button ampliado para 56px (+5px V e H)
     var _sonar_size = round(56 * _ratio);
