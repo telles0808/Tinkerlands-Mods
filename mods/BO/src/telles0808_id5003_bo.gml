@@ -688,7 +688,7 @@ function BO_RunRepeatedDeposit()
         var _source = _items[i];
         var _item = Container.GetItem(INVENTORY, _source.x, _source.y);
 
-        if(is_undefined(_item) || !BO_ItemIsMovable(_item))
+        if(is_undefined(_item) || !BO_ItemIsMovable(_item, INVENTORY, _source.x, _source.y))
             continue;
 
         var _item_id = BO_ItemID(_item);
@@ -715,7 +715,7 @@ function BO_RunRepeatedDeposit()
 
                 if(
                     is_undefined(_current)
-                    || !BO_ItemIsMovable(_current)
+                    || !BO_ItemIsMovable(_current, INVENTORY, _source.x, _source.y)
                     || BO_ItemID(_current) != _item_id
                 )
                 {
@@ -757,7 +757,7 @@ function BO_RunRepeatedDeposit()
 
             if(
                 is_undefined(_after)
-                || !BO_ItemIsMovable(_after)
+                || !BO_ItemIsMovable(_after, INVENTORY, _source.x, _source.y)
                 || BO_ItemID(_after) != _item_id
             )
             {
@@ -788,7 +788,7 @@ function BO_SnapshotMovableInventoryCells()
         {
             var _item = Container.GetItem(INVENTORY, x, y);
 
-            if(!is_undefined(_item) && BO_ItemIsMovable(_item))
+            if(!is_undefined(_item) && BO_ItemIsMovable(_item, INVENTORY, x, y))
             {
                 array_push(
                     _items,
@@ -1637,7 +1637,7 @@ function BO_ItemID(_item)
 }
 
 
-function BO_ItemIsMovable(_item)
+function BO_ItemIsMovable(_item, _container = undefined, _slot_x = undefined, _slot_y = undefined)
 {
     if(!is_numeric(_item) || !ds_exists(_item, ds_type_map))
         return false;
@@ -1645,51 +1645,131 @@ function BO_ItemIsMovable(_item)
     if(!ds_map_exists(_item, 6) || !is_numeric(_item[? 6]) || _item[? 6] < 1)
         return false;
 
-    // Check direct padlock/favorite keys (truthy equality for 1 and true)
-    if(ds_map_exists(_item, "favorite") && (_item[? "favorite"] == 1 || _item[? "favorite"] == true))
+    // 1. Check direct keys on item ds_map
+    if(ds_map_exists(_item, "locked") && (_item[? "locked"] == 1 || _item[? "locked"] == true || _item[? "locked"] == "1"))
         return false;
 
-    if(ds_map_exists(_item, "favoriteItem") && (_item[? "favoriteItem"] == 1 || _item[? "favoriteItem"] == true))
+    if(ds_map_exists(_item, "is_locked") && (_item[? "is_locked"] == 1 || _item[? "is_locked"] == true || _item[? "is_locked"] == "1"))
         return false;
 
-    if(ds_map_exists(_item, "is_favorite") && (_item[? "is_favorite"] == 1 || _item[? "is_favorite"] == true))
+    if(ds_map_exists(_item, "IsLocked") && (_item[? "IsLocked"] == 1 || _item[? "IsLocked"] == true || _item[? "IsLocked"] == "1"))
         return false;
 
-    if(ds_map_exists(_item, "favorite_item") && (_item[? "favorite_item"] == 1 || _item[? "favorite_item"] == true))
+    if(ds_map_exists(_item, "favorite") && (_item[? "favorite"] == 1 || _item[? "favorite"] == true || _item[? "favorite"] == "1"))
         return false;
 
-    if(ds_map_exists(_item, "locked") && (_item[? "locked"] == 1 || _item[? "locked"] == true))
+    if(ds_map_exists(_item, "favoriteItem") && (_item[? "favoriteItem"] == 1 || _item[? "favoriteItem"] == true || _item[? "favoriteItem"] == "1"))
         return false;
 
-    if(ds_map_exists(_item, "is_locked") && (_item[? "is_locked"] == 1 || _item[? "is_locked"] == true))
+    if(ds_map_exists(_item, "is_favorite") && (_item[? "is_favorite"] == 1 || _item[? "is_favorite"] == true || _item[? "is_favorite"] == "1"))
         return false;
 
-    if(ds_map_exists(_item, "IsLocked") && (_item[? "IsLocked"] == 1 || _item[? "IsLocked"] == true))
+    if(ds_map_exists(_item, "favorite_item") && (_item[? "favorite_item"] == 1 || _item[? "favorite_item"] == true || _item[? "favorite_item"] == "1"))
         return false;
 
-    // Check all keys in ds_map
+    // 2. Iterate all keys in item ds_map for lock / fav markers
     var _k = ds_map_find_first(_item);
     while(!is_undefined(_k))
     {
-        var _v = _item[? _k];
         var _k_str = string_lower(string(_k));
 
         if(
-            _k_str == "favorite"
-            || _k_str == "favoriteitem"
-            || _k_str == "fav"
-            || _k_str == "is_favorite"
-            || _k_str == "locked"
+            _k_str == "locked"
             || _k_str == "is_locked"
             || _k_str == "islocked"
+            || _k_str == "favorite"
+            || _k_str == "is_favorite"
+            || _k_str == "favoriteitem"
+            || _k_str == "favorite_item"
             || _k_str == "padlock"
+            || _k_str == "pinned"
         )
         {
+            var _v = _item[? _k];
             if(_v == 1 || _v == true || _v == "1" || _v == "true")
                 return false;
         }
 
         _k = ds_map_find_next(_item, _k);
+    }
+
+    // 3. Check container / slot locked state if slot coordinates are provided
+    if(!is_undefined(_container) && !is_undefined(_slot_x) && !is_undefined(_slot_y))
+    {
+        // Engine native functions check
+        var _fn_slot_locked = BO_GetCallable("container_slot_is_locked");
+        if(!is_undefined(_fn_slot_locked))
+        {
+            if(script_execute_ext(_fn_slot_locked, [_container, _slot_x, _slot_y]))
+                return false;
+        }
+
+        var _fn_item_locked = BO_GetCallable("container_item_is_locked");
+        if(!is_undefined(_fn_item_locked))
+        {
+            if(script_execute_ext(_fn_item_locked, [_container, _slot_x, _slot_y]))
+                return false;
+        }
+
+        var _fn_is_fav = BO_GetCallable("container_slot_is_favorite");
+        if(!is_undefined(_fn_is_fav))
+        {
+            if(script_execute_ext(_fn_is_fav, [_container, _slot_x, _slot_y]))
+                return false;
+        }
+
+        // If container ds_map holds slot locked grid / map
+        if(is_numeric(_container) && ds_exists(_container, ds_type_map))
+        {
+            if(ds_map_exists(_container, "locked"))
+            {
+                var _lgrid = _container[? "locked"];
+                if(is_numeric(_lgrid) && ds_exists(_lgrid, ds_type_grid))
+                {
+                    if(ds_grid_get(_lgrid, _slot_x, _slot_y) != 0)
+                        return false;
+                }
+            }
+
+            if(ds_map_exists(_container, "favorites"))
+            {
+                var _fgrid = _container[? "favorites"];
+                if(is_numeric(_fgrid) && ds_exists(_fgrid, ds_type_grid))
+                {
+                    if(ds_grid_get(_fgrid, _slot_x, _slot_y) != 0)
+                        return false;
+                }
+            }
+        }
+    }
+
+    // 4. Check player or GUI controller locked slots arrays/grids
+    if(instance_exists(objGUIIngameController))
+    {
+        with(objGUIIngameController)
+        {
+            if(variable_instance_exists(id, "lockedSlots") && !is_undefined(_slot_x) && !is_undefined(_slot_y))
+            {
+                var _ls = variable_instance_get(id, "lockedSlots");
+                if(is_array(_ls) && _slot_y < array_length(_ls))
+                {
+                    var _row = _ls[_slot_y];
+                    if(is_array(_row) && _slot_x < array_length(_row) && (_row[_slot_x] == 1 || _row[_slot_x] == true))
+                        return false;
+                }
+            }
+
+            if(variable_instance_exists(id, "favoriteSlots") && !is_undefined(_slot_x) && !is_undefined(_slot_y))
+            {
+                var _fs = variable_instance_get(id, "favoriteSlots");
+                if(is_array(_fs) && _slot_y < array_length(_fs))
+                {
+                    var _frow = _fs[_slot_y];
+                    if(is_array(_frow) && _slot_x < array_length(_frow) && (_frow[_slot_x] == 1 || _frow[_slot_x] == true))
+                        return false;
+                }
+            }
+        }
     }
 
     return true;
