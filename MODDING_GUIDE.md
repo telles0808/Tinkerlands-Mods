@@ -310,3 +310,47 @@ function GetChestSection(_container) {
 
 > [!WARNING]
 > **GameMaker YYC Gotcha:** Never use `return` inside a `with(...)` block to return values from a function. In GameMaker, `return` inside `with` can behave like `break` or produce undefined behavior. Always use indexed `instance_find` iteration when returning results.
+
+---
+
+## 6. 🖥️ Multi-Monitor Window Management & Borderless Fullscreen
+
+### Windows Virtual Desktop Coordinate Space
+In multi-monitor Windows setups, the primary display is anchored at `(X = 0, Y = 0)`. Secondary monitors are positioned in global virtual screen coordinates:
+* **Monitor Left of Primary:** Negative X coordinates (e.g., `X = -1920, Y = 0` for 1080p).
+* **Monitor Right of Primary:** Positive X coordinates (e.g., `X = 1920, Y = 0`).
+
+### The GameMaker Borderless Fullscreen Trap
+When a GameMaker game runs in **"Tela cheia sem bordas"** (Borderless Fullscreen):
+1. The engine internal flag reports `window_get_fullscreen() == true`.
+2. While `window_get_fullscreen()` is active, the GameMaker display manager **silently ignores** any calls to `window_set_position(x, y)`.
+3. Calling `window_set_fullscreen(true)` on a secondary monitor forces Direct3D11 to **snap the window back to the primary monitor (`X = 0`)**.
+
+### The Clean Native Solution (No DLLs or External Scripts)
+To reliably move a borderless fullscreen window between displays in pure GML:
+
+```gml
+function Window_MoveToMonitor(_target_x, _width, _height)
+{
+    // 1. Release the internal fullscreen lock
+    window_set_fullscreen(false);
+
+    // 2. Strip OS window borders
+    window_set_showborder(false);
+
+    // 3. Position the client area at the target display's origin
+    window_set_position(_target_x, 0);
+
+    // 4. Set the dimensions to fill the target monitor exactly
+    window_set_size(_width, _height);
+}
+```
+
+> [!IMPORTANT]
+> **Do NOT call `window_set_fullscreen(true)` after repositioning!**  
+> A window with `window_set_showborder(false)` spanning `(target_x, 0)` at `1920x1080` **is** the native Borderless Fullscreen on that monitor. Re-enabling fullscreen flag causes Direct3D to jump back to Display 1.
+
+### Avoiding Menu Dimmer and Draw State Corruption
+* **Never call `Input.DisableMenuInputs()` on UI hover:** In Tinkerlands, disabling menu inputs triggers the modal pause dimmer, turning the entire screen translucent black.
+* **Strict Draw State Reset:** Always isolate custom GUI drawing in `OnModDrawGUIEnd` by resetting `draw_set_alpha(1.0)` and `draw_set_color(c_white)` both before and after rendering to avoid corrupting the game's dynamic day/night title screen lighting.
+

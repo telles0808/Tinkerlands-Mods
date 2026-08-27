@@ -14,6 +14,7 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 | **[RealClock](#-realclock-id-5002)** | `5002` | Real-world 24-hour local computer time in the top-right corner without needing the Clock accessory. | ✅ Stable | [⬇️ Download RealClock.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5002_realclock.mod) |
 | **[Better Organizer](#-better-organizer-id-5003)** | `5003` | Chest automation & organization: 7-category filter bar with hotbar protection and persistent routing. | ✅ Stable | [⬇️ Download BO.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5003_bo.mod) |
 | **[TomTom](#-tomtom-id-5004)** | `5004` | Advanced GPS waypoint manager with interactive map pins, dual-layer radar, mob tracking, and automatic death tombstone pins. | ✅ Stable | [⬇️ Download TomTom.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5004_tomtom.mod) |
+| **[Monitor Switcher](#-monitor-switcher-id-5005)** | `5005` | 1-click multi-monitor display switcher on the title screen for Borderless Fullscreen mode. | ✅ Stable | [⬇️ Download Monitor.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5005_monitor.mod) |
 
 ---
 
@@ -85,6 +86,18 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 
 ---
 
+### 🖥️ Monitor Switcher (ID: 5005)
+* **1-Click Multi-Monitor Toggle:** Switch the game window across multiple monitors in Borderless Fullscreen directly from the title screen.
+* **Visual States:** Active monitor highlighted in brilliant gold and blue; inactive monitors in high-contrast metallic silver (visible day and night).
+* **Persistent Preference:** Remembers your chosen monitor via `monitor.cfg` and positions the game automatically on startup.
+* **Preview:**
+
+  ![Monitor Switcher Preview](mods/Monitor/preview.png)
+
+* **Documentation & Source:** [mods/Monitor/README.md](mods/Monitor/README.md) • [mods/Monitor/src/telles0808_id5005_monitor.gml](mods/Monitor/src/telles0808_id5005_monitor.gml)
+
+---
+
 ## 📖 Technical Documentation
 For developers and modders looking to understand Tinkerlands' engine variables, lifecycle hooks, and NPC architecture:
 * 📄 **[Tinkerlands Modding & Engine Reference Guide](MODDING_GUIDE.md):** Detailed guide on GML mod packaging, global variables, lifecycle events, $O(1)$ `npcID` resolution, container hooks, and minimap rendering.
@@ -101,6 +114,7 @@ Each mod folder includes a 1-click Windows Command Script (`.cmd`) to compile, p
 | **RealClock** | [`mods/RealClock/src/telles0808_id5002_realclock.cmd`](mods/RealClock/src/telles0808_id5002_realclock.cmd) |
 | **Better Organizer** | [`mods/BO/src/telles0808_id5003_bo.cmd`](mods/BO/src/telles0808_id5003_bo.cmd) |
 | **TomTom** | [`mods/TomTom/src/telles0808_id5004_tomtom.cmd`](mods/TomTom/src/telles0808_id5004_tomtom.cmd) |
+| **Monitor Switcher** | [`mods/Monitor/src/telles0808_id5005_monitor.cmd`](mods/Monitor/src/telles0808_id5005_monitor.cmd) |
 
 ---
 
