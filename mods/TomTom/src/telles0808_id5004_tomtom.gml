@@ -1667,14 +1667,83 @@ function TomTom_Draw()
 }
 
 // ---------------------------------------------------------------------------
-// PERSISTENCE (tomtom_pins.cfg)
 // ---------------------------------------------------------------------------
+// PERSISTENCE (tomtom_pins.cfg - Isolado por Ilha)
+// ---------------------------------------------------------------------------
+
+function TomTom_GetIslandKey()
+{
+    var _key = "main";
+    if(variable_global_exists("WORLD") && is_struct(WORLD))
+    {
+        var _is_random = (variable_struct_exists(WORLD, "isRandomIsland") && WORLD.isRandomIsland);
+        var _island_id = variable_struct_exists(WORLD, "islandID") ? string(WORLD.islandID) : "0";
+
+        if(_is_random)
+        {
+            var _seed = variable_struct_exists(WORLD, "seed") ? string(WORLD.seed) : "";
+            if(_seed != "")
+                _key = "rnd_" + _island_id + "_" + _seed;
+            else
+                _key = "rnd_" + _island_id;
+        }
+        else
+        {
+            _key = "island_" + _island_id;
+        }
+    }
+    else if(variable_global_exists("ISLAND_DATA") && is_struct(ISLAND_DATA))
+    {
+        var _iid = variable_struct_exists(ISLAND_DATA, "islandID") ? string(ISLAND_DATA.islandID) : "0";
+        _key = "island_" + _iid;
+    }
+
+    return _key;
+}
 
 function TomTom_SavePins(_m)
 {
     if(_m == undefined) return;
 
-    var _file = file_text_open_write("tomtom_pins.cfg");
+    var _current_island = TomTom_GetIslandKey();
+    var _other_island_lines = [];
+
+    // Lê linhas de outras ilhas para preservá-las no arquivo
+    var _filename = "tomtom_pins.cfg";
+    if(file_exists(_filename))
+    {
+        var _rf = file_text_open_read(_filename);
+        if(_rf >= 0)
+        {
+            while(!file_text_eof(_rf))
+            {
+                var _l = file_text_read_string(_rf);
+                file_text_readln(_rf);
+                if(string_length(_l) <= 0) continue;
+
+                // Ignora CFG antigo e linhas da ilha atual (serão reescritos)
+                if(string_pos("#CFG|", _l) == 1) continue;
+
+                var _p1 = string_pos("|", _l);
+                var _t1 = (_p1 > 1) ? string_delete(_l, 1, _p1) : "";
+                var _p2 = string_pos("|", _t1);
+                var _t2 = (_p2 > 1) ? string_delete(_t1, 1, _p2) : "";
+                var _p3 = string_pos("|", _t2);
+
+                if(_p3 > 1)
+                {
+                    var _line_island = string_delete(_t2, 1, _p3);
+                    if(_line_island != _current_island)
+                    {
+                        array_push(_other_island_lines, _l);
+                    }
+                }
+            }
+            file_text_close(_rf);
+        }
+    }
+
+    var _file = file_text_open_write(_filename);
     if(_file < 0) return;
 
     // 1ª Linha: Configurações de estado (radar_mode, track_npcs, track_chests, track_mobs)
@@ -1686,14 +1755,22 @@ function TomTom_SavePins(_m)
         string(_m.track_mobs ? 1 : 0));
     file_text_writeln(_file);
 
-    // Linhas seguintes: Marcadores de Mapa (inclui tipo 4 = Death Pin)
+    // Linhas dos marcadores da ilha atual: X|Y|TYPE|ISLAND_KEY
     for(var i = 0; i < array_length(_m.pins); i++)
     {
         var _p = _m.pins[i];
         file_text_write_string(_file,
             string(_p.map_x) + "|" +
             string(_p.map_y) + "|" +
-            string(_p.type));
+            string(_p.type) + "|" +
+            _current_island);
+        file_text_writeln(_file);
+    }
+
+    // Linhas de marcadores de outras ilhas salvas
+    for(var j = 0; j < array_length(_other_island_lines); j++)
+    {
+        file_text_write_string(_file, _other_island_lines[j]);
         file_text_writeln(_file);
     }
 
@@ -1706,6 +1783,8 @@ function TomTom_LoadPins(_m)
     _m.pins = [];
 
     TomTom_EnsureDefaults(_m);
+
+    var _current_island = TomTom_GetIslandKey();
 
     var _filename = "";
     if(file_exists("tomtom_pins.cfg"))
@@ -1754,7 +1833,7 @@ function TomTom_LoadPins(_m)
             continue;
         }
 
-        // Linha de Marcador
+        // Linha de Marcador: X|Y|TYPE ou X|Y|TYPE|ISLAND_KEY
         var _p1 = string_pos("|", _line);
         if(_p1 <= 1) continue;
 
@@ -1769,12 +1848,17 @@ function TomTom_LoadPins(_m)
 
         var _p3 = string_pos("|", _t2);
         var _pt_str = (_p3 > 1) ? string_copy(_t2, 1, _p3 - 1) : _t2;
+        var _island_str = (_p3 > 1) ? string_delete(_t2, 1, _p3) : "island_0";
 
-        array_push(_m.pins, {
-            map_x: real(_px_str),
-            map_y: real(_py_str),
-            type:  real(_pt_str)
-        });
+        // Se o pin pertence a esta ilha (ou é legado sem tag de ilha e estamos na ilha principal)
+        if(_island_str == _current_island || (_p3 <= 1 && _current_island == "island_0"))
+        {
+            array_push(_m.pins, {
+                map_x: real(_px_str),
+                map_y: real(_py_str),
+                type:  real(_pt_str)
+            });
+        }
     }
 
     file_text_close(_file);
