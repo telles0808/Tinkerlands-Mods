@@ -10,18 +10,35 @@
 // LIFECYCLE HOOKS
 // ---------------------------------------------------------------------------
 
+OnModUpdate(function()
+{
+    Monitor_Update();
+});
+
 OnModDrawGUIEnd(function()
 {
     Monitor_Draw();
 });
 
 // ---------------------------------------------------------------------------
-// STATE (100% STATELESS / ZERO .CFG DEPENDENCY)
+// STATE & CONFIGURATION
 // ---------------------------------------------------------------------------
 
-if(!variable_global_exists("MONITOR_ACTIVE_INDEX"))
+function Monitor_GetState()
 {
-    global.MONITOR_ACTIVE_INDEX = 1; // Inicia sempre seguro no Monitor 1 (Principal)
+    if(!variable_global_exists("MONITOR_STATE"))
+    {
+        global.MONITOR_STATE = {
+            applied_startup: false,
+            frame_counter: 0,
+            active_index: 1,
+            monitors: []
+        };
+
+        Monitor_LoadConfig(global.MONITOR_STATE);
+    }
+
+    return global.MONITOR_STATE;
 }
 
 function Monitor_ScaleRatio()
@@ -38,20 +55,68 @@ function Monitor_IsTitleScreen()
     return instance_exists(objMenuMain);
 }
 
+function Monitor_SetupDefaults(_state)
+{
+    _state.monitors = [];
+
+    // Sequência do sistema: Monitor 2 na esquerda (X = -1920), Monitor 1 na direita (X = 0)
+    var _m_left = {
+        label: "2",
+        x: -1920,
+        y: 0,
+        w: 1920,
+        h: 1080
+    };
+
+    var _m_right = {
+        label: "1",
+        x: 0,
+        y: 0,
+        w: 1920,
+        h: 1080
+    };
+
+    array_push(_state.monitors, _m_left);
+    array_push(_state.monitors, _m_right);
+
+    // Padrão ao iniciar: Monitor 1 (nativo)
+    _state.active_index = 1;
+}
+
+function Monitor_LoadConfig(_state)
+{
+    Monitor_SetupDefaults(_state);
+}
+
+function Monitor_SaveConfig(_state)
+{
+}
+
 // ---------------------------------------------------------------------------
 // TROCA DE MONITOR (100% NATIVO GAMEMAKER)
 // ---------------------------------------------------------------------------
 
-function Monitor_SwitchTo(_target_index)
+function Monitor_SwitchTo(_state, _target_index)
 {
-    global.MONITOR_ACTIVE_INDEX = _target_index;
-    var _x = (_target_index == 0) ? -1920 : 0;
+    if(_target_index < 0 || _target_index >= array_length(_state.monitors))
+        return;
 
-    // Transição nativa: janela sem bordas posicionada no monitor desejado
+    _state.active_index = _target_index;
+    var _mon = _state.monitors[_target_index];
+
+    // Transição nativa que move a janela sem bordas para o monitor correto
     window_set_fullscreen(false);
     window_set_showborder(false);
-    window_set_position(_x, 0);
+    window_set_position(_mon.x, 0);
     window_set_size(1920, 1080);
+}
+
+// ---------------------------------------------------------------------------
+// ATUALIZAÇÃO
+// ---------------------------------------------------------------------------
+
+function Monitor_Update()
+{
 }
 
 // ---------------------------------------------------------------------------
@@ -63,10 +128,10 @@ function Monitor_Draw()
     if(!Monitor_IsTitleScreen())
         return;
 
-    if(!variable_global_exists("MONITOR_ACTIVE_INDEX"))
-    {
-        global.MONITOR_ACTIVE_INDEX = 1;
-    }
+    var _state = Monitor_GetState();
+    var _mon_count = array_length(_state.monitors);
+    if(_mon_count <= 0)
+        return;
 
     // Reset estrito antes de desenhar qualquer elemento
     draw_set_alpha(1.0);
@@ -83,23 +148,20 @@ function Monitor_Draw()
     var _mx = device_mouse_x_to_gui(0);
     var _my = device_mouse_y_to_gui(0);
 
-    var _labels = ["2", "1"];
-
-    for(var _i = 0; _i < 2; _i++)
+    for(var _i = 0; _i < _mon_count; _i++)
     {
+        var _mon = _state.monitors[_i];
         var _bx = _startX + _i * (_btnW + _gap);
         var _by = _startY;
 
         var _hover = (_mx >= _bx && _mx < _bx + _btnW && _my >= _by && _my < _by + _btnH);
+        var _is_active = (_i == _state.active_index);
 
-        // Processa clique antes de avaliar o estado ativo para atualizar no mesmo frame
         if(_hover && mouse_check_button_pressed(mb_left))
         {
             mouse_clear(mb_left);
-            Monitor_SwitchTo(_i);
+            Monitor_SwitchTo(_state, _i);
         }
-
-        var _is_active = (_i == global.MONITOR_ACTIVE_INDEX);
 
         var _is_pressed = (_hover && mouse_check_button(mb_left));
         var _pressOffsetY = _is_pressed ? round(2 * _ratio) : 0;
@@ -163,14 +225,19 @@ function Monitor_Draw()
         }
 
         // 4. Número central
+        var _num_str = string(_mon.label);
+        var _text_x = round(_cx);
+        var _text_y = round(_drawY + (_screenH * 0.5));
+        var _textScale = 2.2 * _ratio;
+
         GUI.DrawText(
-            round(_cx),
-            round(_drawY + (_screenH * 0.5)),
-            _labels[_i],
+            _text_x,
+            _text_y,
+            _num_str,
             5,
             _colText,
             1.0,
-            2.2 * _ratio
+            _textScale
         );
     }
 

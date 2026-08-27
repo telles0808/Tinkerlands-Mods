@@ -89,7 +89,7 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 ### 🖥️ Monitor Switcher (ID: 5005)
 * **1-Click Multi-Monitor Toggle:** Switch the game window across multiple monitors in Borderless Fullscreen directly from the title screen.
 * **Visual States:** Active monitor highlighted in brilliant gold and blue; inactive monitors in high-contrast metallic silver (visible day and night).
-* **Safe Primary Boot:** Always starts clean on primary display (Monitor 1) without requiring configuration files, preventing off-screen positioning bugs.
+* **Safe Native Boot:** Always defaults to Monitor 1 (primary display) on game restart.
 * **Preview:**
 
   ![Monitor Switcher Preview](mods/Monitor/preview.png)

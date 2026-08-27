@@ -18,7 +18,7 @@ A seamless, pure native multi-monitor display switcher for **Tinkerlands** that 
   * **Active Display:** Vibrant golden bezel with cyan screen and bright yellow numbering.
   * **Inactive Displays:** Elegant metallic silver bezel with solid slate gray screen and crisp white numbering (100% visible day or night).
 * **⚡ 100% Native GameMaker Execution:** Zero external dependencies, zero DLL hooks, zero PowerShell calls, zero background tasks. Pure native GML display calls.
-* **🔒 Safe Primary Boot (Zero Config Dependency):** Always boots safely on the primary display (Monitor 1) without requiring configuration files, completely immune to monitor disconnections or desktop geometry resets.
+* **🔒 Safe Native Boot:** Always defaults to Monitor 1 (primary display) on game restart.
 * **📐 Responsive GUI Scaling:** Dynamically scales with `display_get_gui_height() / 1080.0`, maintaining pixel-perfect proportions across all resolutions.
 * **🛡️ Zero Dimmer or Focus Bugs:** Preserves engine draw state with strict alpha isolation, ensuring title screen lighting and menu inputs are never interrupted.
 
