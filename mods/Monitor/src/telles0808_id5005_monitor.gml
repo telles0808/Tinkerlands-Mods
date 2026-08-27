@@ -10,18 +10,13 @@
 // LIFECYCLE HOOKS
 // ---------------------------------------------------------------------------
 
-OnModUpdate(function()
-{
-    Monitor_Update();
-});
-
 OnModDrawGUIEnd(function()
 {
     Monitor_Draw();
 });
 
 // ---------------------------------------------------------------------------
-// STATE & CONFIGURATION
+// STATE (100% STATELESS / ZERO .CFG DEPENDENCY)
 // ---------------------------------------------------------------------------
 
 function Monitor_GetState()
@@ -29,13 +24,12 @@ function Monitor_GetState()
     if(!variable_global_exists("MONITOR_STATE"))
     {
         global.MONITOR_STATE = {
-            applied_startup: false,
-            frame_counter: 0,
-            active_index: 1,
-            monitors: []
+            active_index: 1, // Sempre inicia seguro no Monitor 1 (Principal)
+            monitors: [
+                { label: "2", x: -1920, y: 0, w: 1920, h: 1080 },
+                { label: "1", x: 0,     y: 0, w: 1920, h: 1080 }
+            ]
         };
-
-        Monitor_LoadConfig(global.MONITOR_STATE);
     }
 
     return global.MONITOR_STATE;
@@ -55,65 +49,6 @@ function Monitor_IsTitleScreen()
     return instance_exists(objMenuMain);
 }
 
-function Monitor_SetupDefaults(_state)
-{
-    _state.monitors = [];
-
-    // Sequência do sistema: Monitor 2 na esquerda (X = -1920), Monitor 1 na direita (X = 0)
-    var _m_left = {
-        label: "2",
-        x: -1920,
-        y: 0,
-        w: 1920,
-        h: 1080
-    };
-
-    var _m_right = {
-        label: "1",
-        x: 0,
-        y: 0,
-        w: 1920,
-        h: 1080
-    };
-
-    array_push(_state.monitors, _m_left);
-    array_push(_state.monitors, _m_right);
-
-    var _cur_x = window_get_x();
-    _state.active_index = (_cur_x < -400) ? 0 : 1;
-}
-
-function Monitor_LoadConfig(_state)
-{
-    Monitor_SetupDefaults(_state);
-
-    if(file_exists("monitor.cfg"))
-    {
-        var _file = file_text_open_read("monitor.cfg");
-        if(_file >= 0)
-        {
-            var _str = file_text_read_string(_file);
-            file_text_close(_file);
-            var _digits = string_digits(_str);
-            if(string_length(_digits) > 0)
-            {
-                var _val = real(_digits);
-                _state.active_index = clamp(_val, 0, 1);
-            }
-        }
-    }
-}
-
-function Monitor_SaveConfig(_state)
-{
-    var _file = file_text_open_write("monitor.cfg");
-    if(_file >= 0)
-    {
-        file_text_write_string(_file, "active=" + string(_state.active_index));
-        file_text_close(_file);
-    }
-}
-
 // ---------------------------------------------------------------------------
 // TROCA DE MONITOR (100% NATIVO GAMEMAKER)
 // ---------------------------------------------------------------------------
@@ -126,37 +61,11 @@ function Monitor_SwitchTo(_state, _target_index)
     _state.active_index = _target_index;
     var _mon = _state.monitors[_target_index];
 
-    // Transição nativa que move a janela sem bordas para o monitor correto
+    // Transição nativa: janela sem bordas posicionada no monitor desejado
     window_set_fullscreen(false);
     window_set_showborder(false);
     window_set_position(_mon.x, 0);
     window_set_size(1920, 1080);
-
-    Monitor_SaveConfig(_state);
-}
-
-// ---------------------------------------------------------------------------
-// ATUALIZAÇÃO
-// ---------------------------------------------------------------------------
-
-function Monitor_Update()
-{
-    var _state = Monitor_GetState();
-
-    if(!_state.applied_startup)
-    {
-        _state.frame_counter++;
-        if(_state.frame_counter >= 30)
-        {
-            _state.applied_startup = true;
-            // Se o monitor salvo for o 2 (esquerda, índice 0) e a janela estiver na direita, move
-            if(_state.active_index == 0 && window_get_x() >= -400)
-            {
-                Monitor_SwitchTo(_state, 0);
-            }
-        }
-        return;
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -212,7 +121,7 @@ function Monitor_Draw()
         // Inativo: Moldura prata claro + tela cinza ardósia + texto branco nítido
         var _colBezel  = _is_active ? make_color_rgb(255, 205, 50)  : (_hover ? make_color_rgb(220, 225, 235) : make_color_rgb(175, 180, 190));
         var _colScreen = _is_active ? make_color_rgb(25, 100, 190)  : (_hover ? make_color_rgb(115, 120, 135) : make_color_rgb(85, 90, 100));
-        var _colStand  = _is_active ? make_color_rgb(205, 155, 35)  : (_hover ? make_color_rgb(150, 155, 165) : make_color_rgb(125, 130, 140));
+        var _colStand  = _active_stand(_is_active, _hover);
         var _colText   = _is_active ? make_color_rgb(255, 245, 140) : c_white;
 
         var _screenH    = _btnH - round(10 * _ratio);
@@ -284,4 +193,15 @@ function Monitor_Draw()
     // Reset estrito ao final
     draw_set_alpha(1.0);
     draw_set_color(c_white);
+}
+
+function _active_stand(_is_active, _hover)
+{
+    if(_is_active)
+        return make_color_rgb(205, 155, 35);
+
+    if(_hover)
+        return make_color_rgb(150, 155, 165);
+
+    return make_color_rgb(125, 130, 140);
 }

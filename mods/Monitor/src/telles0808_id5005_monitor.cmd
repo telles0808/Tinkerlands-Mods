@@ -113,42 +113,6 @@ if ($steamMods -and (Test-Path $steamMods)) {
     Write-Host ("Implantado com sucesso em: " + (Join-Path $steamMods $ModFileName)) -ForegroundColor Green
 }
 
-# Auto-detect Windows monitors sorted physically from Left to Right and write monitor.cfg
-try {
-    Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
-    $screens = [System.Windows.Forms.Screen]::AllScreens | Sort-Object { $_.Bounds.X }
-    if ($screens -and $screens.Count -gt 0) {
-        $cfgLines = @()
-        $monList = @()
-        $activeIdx = 0
-        $idx = 0
-        foreach ($s in $screens) {
-            # In Windows, Primary display is Monitor 1; secondary is Monitor 2
-            $label = if ($s.Primary) { "1" } else { "2" }
-            $monList += ("$label|$($s.Bounds.X)|$($s.Bounds.Y)|$($s.Bounds.Width)|$($s.Bounds.Height)|$($s.DeviceName)")
-            if ($s.Primary) {
-                $activeIdx = $idx
-            }
-            $idx++
-        }
-
-        $cfgLines += "active=$activeIdx"
-        $cfgLines += "count=$($screens.Count)"
-        $cfgLines += $monList
-
-        $appDataDir = Join-Path $env:LOCALAPPDATA 'Tinkerlands'
-        if (Test-Path $appDataDir) {
-            $cfgLines | Set-Content (Join-Path $appDataDir "monitor.cfg") -Encoding UTF8
-            $tempDir = Join-Path $appDataDir 'temp'
-            if (Test-Path $tempDir) {
-                $cfgLines | Set-Content (Join-Path $tempDir "monitor.cfg") -Encoding UTF8
-            }
-            Write-Host ("Configuracao de monitores atualizada a partir do Windows ($($screens.Count) telas detectadas).") -ForegroundColor Green
-        }
-    }
-} catch {
-    Write-Host "Aviso: Nao foi possivel autodetectar monitores do Windows no build." -ForegroundColor Yellow
-}
 
 $packver = Join-Path $env:LOCALAPPDATA 'Tinkerlands\packver'
 if (Test-Path $packver) {
