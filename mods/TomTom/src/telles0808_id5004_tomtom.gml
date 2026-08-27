@@ -844,9 +844,16 @@ function TomTom_ButtonGeometry()
 {
     var _ratio = TomTom_ScaleRatio();
     var _gw    = display_get_gui_width();
+    var _gh    = display_get_gui_height();
 
-    var _base_x = _gw - round(100 * _ratio);
-    var _base_y = round(335 * _ratio);
+    var _frameW           = max(sprite_get_width(sprGUIIngameMinimapContainer), _gw * 0.16);
+    var _frameRightMargin = max(7, _gw * 0.008);
+    var _frameLeft        = _gw - _frameW - _frameRightMargin;
+    var _frameTop         = max(7, _gh * 0.015);
+
+    // Posicionado exatamente à esquerda do topo do minimapa (X: 1513, Y: 18 em 1920x1080)
+    var _base_x = _frameLeft - round(86 * _ratio);
+    var _base_y = _frameTop + round(2 * _ratio);
 
     // Sonar Button ampliado para 56px (+5px V e H)
     var _sonar_size = round(56 * _ratio);
