@@ -19,20 +19,9 @@ OnModDrawGUIEnd(function()
 // STATE (100% STATELESS / ZERO .CFG DEPENDENCY)
 // ---------------------------------------------------------------------------
 
-function Monitor_GetState()
+if(!variable_global_exists("MONITOR_ACTIVE_INDEX"))
 {
-    if(!variable_global_exists("MONITOR_STATE"))
-    {
-        global.MONITOR_STATE = {
-            active_index: 1, // Sempre inicia seguro no Monitor 1 (Principal)
-            monitors: [
-                { label: "2", x: -1920, y: 0, w: 1920, h: 1080 },
-                { label: "1", x: 0,     y: 0, w: 1920, h: 1080 }
-            ]
-        };
-    }
-
-    return global.MONITOR_STATE;
+    global.MONITOR_ACTIVE_INDEX = 1; // Inicia sempre seguro no Monitor 1 (Principal)
 }
 
 function Monitor_ScaleRatio()
@@ -53,18 +42,15 @@ function Monitor_IsTitleScreen()
 // TROCA DE MONITOR (100% NATIVO GAMEMAKER)
 // ---------------------------------------------------------------------------
 
-function Monitor_SwitchTo(_state, _target_index)
+function Monitor_SwitchTo(_target_index)
 {
-    if(_target_index < 0 || _target_index >= array_length(_state.monitors))
-        return;
-
-    _state.active_index = _target_index;
-    var _mon = _state.monitors[_target_index];
+    global.MONITOR_ACTIVE_INDEX = _target_index;
+    var _x = (_target_index == 0) ? -1920 : 0;
 
     // Transição nativa: janela sem bordas posicionada no monitor desejado
     window_set_fullscreen(false);
     window_set_showborder(false);
-    window_set_position(_mon.x, 0);
+    window_set_position(_x, 0);
     window_set_size(1920, 1080);
 }
 
@@ -77,10 +63,10 @@ function Monitor_Draw()
     if(!Monitor_IsTitleScreen())
         return;
 
-    var _state = Monitor_GetState();
-    var _mon_count = array_length(_state.monitors);
-    if(_mon_count <= 0)
-        return;
+    if(!variable_global_exists("MONITOR_ACTIVE_INDEX"))
+    {
+        global.MONITOR_ACTIVE_INDEX = 1;
+    }
 
     // Reset estrito antes de desenhar qualquer elemento
     draw_set_alpha(1.0);
@@ -97,20 +83,23 @@ function Monitor_Draw()
     var _mx = device_mouse_x_to_gui(0);
     var _my = device_mouse_y_to_gui(0);
 
-    for(var _i = 0; _i < _mon_count; _i++)
+    var _labels = ["2", "1"];
+
+    for(var _i = 0; _i < 2; _i++)
     {
-        var _mon = _state.monitors[_i];
         var _bx = _startX + _i * (_btnW + _gap);
         var _by = _startY;
 
         var _hover = (_mx >= _bx && _mx < _bx + _btnW && _my >= _by && _my < _by + _btnH);
-        var _is_active = (_i == _state.active_index);
 
+        // Processa clique antes de avaliar o estado ativo para atualizar no mesmo frame
         if(_hover && mouse_check_button_pressed(mb_left))
         {
             mouse_clear(mb_left);
-            Monitor_SwitchTo(_state, _i);
+            Monitor_SwitchTo(_i);
         }
+
+        var _is_active = (_i == global.MONITOR_ACTIVE_INDEX);
 
         var _is_pressed = (_hover && mouse_check_button(mb_left));
         var _pressOffsetY = _is_pressed ? round(2 * _ratio) : 0;
@@ -121,7 +110,7 @@ function Monitor_Draw()
         // Inativo: Moldura prata claro + tela cinza ardósia + texto branco nítido
         var _colBezel  = _is_active ? make_color_rgb(255, 205, 50)  : (_hover ? make_color_rgb(220, 225, 235) : make_color_rgb(175, 180, 190));
         var _colScreen = _is_active ? make_color_rgb(25, 100, 190)  : (_hover ? make_color_rgb(115, 120, 135) : make_color_rgb(85, 90, 100));
-        var _colStand  = _active_stand(_is_active, _hover);
+        var _colStand  = _is_active ? make_color_rgb(205, 155, 35)  : (_hover ? make_color_rgb(150, 155, 165) : make_color_rgb(125, 130, 140));
         var _colText   = _is_active ? make_color_rgb(255, 245, 140) : c_white;
 
         var _screenH    = _btnH - round(10 * _ratio);
@@ -174,34 +163,18 @@ function Monitor_Draw()
         }
 
         // 4. Número central
-        var _num_str = string(_mon.label);
-        var _text_x = round(_cx);
-        var _text_y = round(_drawY + (_screenH * 0.5));
-        var _textScale = 2.2 * _ratio;
-
         GUI.DrawText(
-            _text_x,
-            _text_y,
-            _num_str,
+            round(_cx),
+            round(_drawY + (_screenH * 0.5)),
+            _labels[_i],
             5,
             _colText,
             1.0,
-            _textScale
+            2.2 * _ratio
         );
     }
 
     // Reset estrito ao final
     draw_set_alpha(1.0);
     draw_set_color(c_white);
-}
-
-function _active_stand(_is_active, _hover)
-{
-    if(_is_active)
-        return make_color_rgb(205, 155, 35);
-
-    if(_hover)
-        return make_color_rgb(150, 155, 165);
-
-    return make_color_rgb(125, 130, 140);
 }
