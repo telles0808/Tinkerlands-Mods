@@ -1744,41 +1744,45 @@ function TomTom_GetIslandKey()
 {
     var _m = ModInstance.Get("TomTom");
 
-    // 1. Se o lifecycle marcou como ilha secundária / expedição
+    // 1. Checa WORLD.mapgenID (confirmado diretamente pelos desenvolvedores da engine):
+    // Na ilha principal retorna "undefined"; em ilhas procedurais/expedição retorna o ID único da ilha.
+    if(variable_global_exists("WORLD") && is_struct(WORLD))
+    {
+        if(variable_struct_exists(WORLD, "mapgenID"))
+        {
+            var _mgid = WORLD.mapgenID;
+            if(!is_undefined(_mgid) && string(_mgid) != "" && string(_mgid) != "undefined")
+            {
+                return "rnd_" + string(_mgid);
+            }
+        }
+    }
+
+    // 2. Fallback caso mapgenID esteja em objWorldController
+    if(instance_exists(objWorldController))
+    {
+        var _wc = instance_find(objWorldController, 0);
+        if(variable_instance_exists(_wc, "mapgenID"))
+        {
+            var _wcmgid = _wc.mapgenID;
+            if(!is_undefined(_wcmgid) && string(_wcmgid) != "" && string(_wcmgid) != "undefined")
+            {
+                return "rnd_" + string(_wcmgid);
+            }
+        }
+    }
+
+    // 3. Fallback se estiver marcado como ilha não-principal pelo lifecycle ou por isRandomIsland
     if(_m != undefined && variable_instance_exists(_m, "is_main_island") && !_m.is_main_island)
     {
-        // Tenta extrair ID ou seed da ilha atual de forma 100% segura
-        if(variable_global_exists("WORLD") && is_struct(WORLD))
-        {
-            if(variable_struct_exists(WORLD, "seed") && string(WORLD.seed) != "" && string(WORLD.seed) != "0")
-                return "rnd_" + string(WORLD.seed);
-
-            if(variable_struct_exists(WORLD, "islandID") && string(WORLD.islandID) != "" && string(WORLD.islandID) != "0")
-                return "rnd_" + string(WORLD.islandID);
-        }
-
-        if(instance_exists(objWorldController))
-        {
-            var _wc = instance_find(objWorldController, 0);
-            if(variable_instance_exists(_wc, "islandID") && string(_wc.islandID) != "" && string(_wc.islandID) != "0")
-                return "rnd_" + string(_wc.islandID);
-            if(variable_instance_exists(_wc, "randomIslandID") && string(_wc.randomIslandID) != "" && string(_wc.randomIslandID) != "0")
-                return "rnd_" + string(_wc.randomIslandID);
-        }
-
         return "rnd_expedition";
     }
 
-    // 2. Se WORLD.isRandomIsland estiver ativo
     if(variable_global_exists("WORLD") && is_struct(WORLD))
     {
         if(variable_struct_exists(WORLD, "isRandomIsland") && WORLD.isRandomIsland)
         {
-            if(variable_struct_exists(WORLD, "seed") && string(WORLD.seed) != "" && string(WORLD.seed) != "0")
-                return "rnd_" + string(WORLD.seed);
-            if(variable_struct_exists(WORLD, "islandID") && string(WORLD.islandID) != "" && string(WORLD.islandID) != "0")
-                return "rnd_" + string(WORLD.islandID);
-            return "rnd_island";
+            return "rnd_expedition";
         }
     }
 
