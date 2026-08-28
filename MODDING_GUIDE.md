@@ -235,10 +235,11 @@ A naive relative calculation (`target - player`) assumes the player remains in t
    var _halfViewX = ((_miniRight - _miniLeft) * 0.5) / _miniScale;
    var _halfViewY = ((_miniBottom - _miniTop) * 0.5) / _miniScale;
    ```
-3. Clamp the virtual minimap camera:
+3. Clamp the virtual minimap camera (with centering for small caves/dungeons):
    ```gml
-   var _camX = clamp(_playerMapX, _halfViewX, max(_halfViewX, _mapW - _halfViewX));
-   var _camY = clamp(_playerMapY, _halfViewY, max(_halfViewY, _mapH - _halfViewY));
+   // If the map fits inside the minimap window, center it; otherwise, clamp to borders:
+   var _camX = (_mapW <= _halfViewX * 2) ? (_mapW * 0.5) : clamp(_playerMapX, _halfViewX, _mapW - _halfViewX);
+   var _camY = (_mapH <= _halfViewY * 2) ? (_mapH * 0.5) : clamp(_playerMapY, _halfViewY, _mapH - _halfViewY);
    ```
 4. Project target coordinates using the clamped camera:
    ```gml
