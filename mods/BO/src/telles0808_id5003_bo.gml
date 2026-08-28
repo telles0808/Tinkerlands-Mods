@@ -101,10 +101,20 @@ function BO_Update()
         _bo.inventory_opened_at = get_timer();
         _bo.button_ready = false;
         _bo.feedback_active = false;
-    }
+        _bo.poll_tick = 0;
 
-    BO_UpdateOpenChest(_bo);
-    BO_PreloadNearbyFilters();
+        BO_UpdateOpenChest(_bo);
+        BO_PreloadNearbyFilters();
+    }
+    else
+    {
+        _bo.poll_tick = variable_instance_exists(_bo, "poll_tick") ? (_bo.poll_tick + 1) : 1;
+        if(_bo.poll_tick >= 10)
+        {
+            _bo.poll_tick = 0;
+            BO_UpdateOpenChest(_bo);
+        }
+    }
 
     if(BO_FilterButtonInput(_bo))
         return;
@@ -1074,57 +1084,35 @@ function BO_SaveChestFilter(_container, _filter)
 
 function BO_FilterStorageSection(_container)
 {
-    var _result = "";
-
     if(instance_exists(objInteractableChest))
     {
-        var _count = instance_number(objInteractableChest);
-
-        for(var i = 0; i < _count; i++)
+        var _sec_chest = "";
+        with(objInteractableChest)
         {
-            var _chest = instance_find(objInteractableChest, i);
-
-            if(
-                _chest != undefined
-                && instance_exists(_chest)
-                && variable_instance_exists(_chest, "container")
-                && variable_instance_get(_chest, "container") == _container
-            )
+            if(variable_instance_exists(id, "container") && id.container == _container)
             {
-                _result = "chest_x"
-                    + string(round(_chest.x))
-                    + "_y"
-                    + string(round(_chest.y));
-                return _result;
+                _sec_chest = "chest_x" + string(round(x)) + "_y" + string(round(y));
+                break;
             }
         }
+        if(_sec_chest != "") return _sec_chest;
     }
 
     if(instance_exists(objInteractableChestAstral))
     {
-        var _count_astral = instance_number(objInteractableChestAstral);
-
-        for(var a = 0; a < _count_astral; a++)
+        var _sec_astral = "";
+        with(objInteractableChestAstral)
         {
-            var _chest_a = instance_find(objInteractableChestAstral, a);
-
-            if(
-                _chest_a != undefined
-                && instance_exists(_chest_a)
-                && variable_instance_exists(_chest_a, "container")
-                && variable_instance_get(_chest_a, "container") == _container
-            )
+            if(variable_instance_exists(id, "container") && id.container == _container)
             {
-                _result = "astral_x"
-                    + string(round(_chest_a.x))
-                    + "_y"
-                    + string(round(_chest_a.y));
-                return _result;
+                _sec_astral = "astral_x" + string(round(x)) + "_y" + string(round(y));
+                break;
             }
         }
+        if(_sec_astral != "") return _sec_astral;
     }
 
-    return _result;
+    return "";
 }
 
 
@@ -1850,20 +1838,11 @@ function BO_GetNearbyContainersByDistance()
         && instance_exists(objInteractableChest)
     )
     {
-        var _count = instance_number(objInteractableChest);
-
-        for(var c = 0; c < _count; c++)
+        with(objInteractableChest)
         {
-            var _chest = instance_find(objInteractableChest, c);
-
-            if(
-                _chest != undefined
-                && instance_exists(_chest)
-                && variable_instance_exists(_chest, "container")
-            )
+            if(variable_instance_exists(id, "container"))
             {
-                var _chest_container = variable_instance_get(_chest, "container");
-
+                var _chest_container = id.container;
                 for(var e = 0; e < array_length(_entries); e++)
                 {
                     if(_entries[e].container == _chest_container)
@@ -1871,8 +1850,8 @@ function BO_GetNearbyContainersByDistance()
                         _entries[e].distance = point_distance(
                             MY_PLAYER.x,
                             MY_PLAYER.y,
-                            _chest.x,
-                            _chest.y
+                            x,
+                            y
                         );
                         break;
                     }
@@ -1906,17 +1885,6 @@ function BO_GetNearbyContainersByDistance()
         if(_entries[s].distance <= _max_distance)
         {
             array_push(_sorted, _entries[s].container);
-        }
-        else
-        {
-            BO_LogImmediate(
-                "[BO][NEARBY-EXCLUDED] container="
-                + string(_entries[s].container)
-                + " reason=distance distance_px="
-                + string(_entries[s].distance)
-                + " max_px="
-                + string(_max_distance)
-            );
         }
     }
 
@@ -1964,14 +1932,7 @@ function BO_GetNearbyContainers()
 
 function BO_LogImmediate(_line)
 {
-    var _file = file_text_open_append("BO.log");
-
-    if(_file < 0)
-        return;
-
-    file_text_write_string(_file, string(_line));
-    file_text_writeln(_file);
-    file_text_close(_file);
+    // Desativado: logs em arquivo removidos para maxima performance e fluidez
 }
 
 
