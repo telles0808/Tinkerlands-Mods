@@ -1818,20 +1818,38 @@ function TomTom_Draw()
 // PERSISTENCE (tomtom_pins.cfg - Isolado por Ilha)
 // ---------------------------------------------------------------------------
 
+function TomTom_GetWorldStruct()
+{
+    // 1. Acesso direto ao globalvar nativo WORLD
+    try
+    {
+        if(is_struct(WORLD))
+            return WORLD;
+    }
+    catch(_e) {}
+
+    // 2. Fallback via global.WORLD
+    try
+    {
+        if(variable_global_exists("WORLD"))
+        {
+            var _gw = variable_global_get("WORLD");
+            if(is_struct(_gw)) return _gw;
+        }
+    }
+    catch(_e2) {}
+
+    return undefined;
+}
+
 function TomTom_GetIslandKey()
 {
     var _m = ModInstance.Get("TomTom");
-
-    // 1. Obtém a struct WORLD nativa com segurança através de variable_global_get
-    var _world = undefined;
-    if(variable_global_exists("WORLD"))
-    {
-        _world = variable_global_get("WORLD");
-    }
+    var _world = TomTom_GetWorldStruct();
 
     if(is_struct(_world))
     {
-        // Se possui o nome canônico da ilha na matriz de navegação (ex: "RandomIsland2x3", "RandomIsland4x4")
+        // 1. Nome canônico da ilha na matriz de navegação (ex: "RandomIsland2x0", "RandomIsland3x0", "RandomIsland4x4")
         if(variable_struct_exists(_world, "name"))
         {
             var _wname = string(_world.name);
@@ -1841,7 +1859,7 @@ function TomTom_GetIslandKey()
             }
         }
 
-        // Se estiver em ilha procedural (isRandomIsland), usa mapgenID ou islandID
+        // 2. Se for ilha procedural/expedição:
         var _is_rnd = false;
         if(variable_struct_exists(_world, "isRandomIsland") && _world.isRandomIsland)
         {
@@ -1850,27 +1868,39 @@ function TomTom_GetIslandKey()
 
         if(_is_rnd)
         {
-            if(variable_struct_exists(_world, "mapgenID"))
-            {
-                var _mgid = _world.mapgenID;
-                if(!is_undefined(_mgid) && string(_mgid) != "" && string(_mgid) != "undefined")
-                {
-                    return "rnd_" + string(_mgid);
-                }
-            }
-
+            // islandID é o índice único da ilha nesta sessão / matriz de navegação
             if(variable_struct_exists(_world, "islandID"))
             {
                 var _isid = _world.islandID;
                 if(!is_undefined(_isid) && string(_isid) != "" && string(_isid) != "0")
                 {
-                    return "rnd_" + string(_isid);
+                    return "rnd_island_" + string(_isid);
+                }
+            }
+
+            // seed é única por geração de terreno daquela ilha
+            if(variable_struct_exists(_world, "seed"))
+            {
+                var _seed = _world.seed;
+                if(!is_undefined(_seed) && string(_seed) != "" && string(_seed) != "0")
+                {
+                    return "rnd_seed_" + string(_seed);
+                }
+            }
+
+            // mapgenID como fallback adicional
+            if(variable_struct_exists(_world, "mapgenID"))
+            {
+                var _mgid = _world.mapgenID;
+                if(!is_undefined(_mgid) && string(_mgid) != "" && string(_mgid) != "undefined")
+                {
+                    return "rnd_mapgen_" + string(_mgid);
                 }
             }
         }
     }
 
-    // 2. Fallback caso objWorldController tenha a identificação
+    // 3. Fallback caso objWorldController tenha a identificação
     if(instance_exists(objWorldController))
     {
         var _wc = instance_find(objWorldController, 0);
@@ -1882,12 +1912,28 @@ function TomTom_GetIslandKey()
                 return _wcname;
             }
         }
+        if(variable_instance_exists(_wc, "islandID"))
+        {
+            var _wcisid = _wc.islandID;
+            if(!is_undefined(_wcisid) && string(_wcisid) != "" && string(_wcisid) != "0")
+            {
+                return "rnd_island_" + string(_wcisid);
+            }
+        }
+        if(variable_instance_exists(_wc, "seed"))
+        {
+            var _wcseed = _wc.seed;
+            if(!is_undefined(_wcseed) && string(_wcseed) != "" && string(_wcseed) != "0")
+            {
+                return "rnd_seed_" + string(_wcseed);
+            }
+        }
         if(variable_instance_exists(_wc, "mapgenID"))
         {
             var _wcmgid = _wc.mapgenID;
             if(!is_undefined(_wcmgid) && string(_wcmgid) != "" && string(_wcmgid) != "undefined")
             {
-                return "rnd_" + string(_wcmgid);
+                return "rnd_mapgen_" + string(_wcmgid);
             }
         }
     }
