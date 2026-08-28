@@ -302,8 +302,15 @@ function TomTom_PinSprite(_type)
         case 3: return sprGUIIngameIconBoss;          // 💀 Boss
         case 4: return sprGUIIngameIconTeleport;      // 🌀 Portal Azul (Teleporte)
         case 5: return sprTombStone;                  // 🪦 Lápide (Death Pin)
+        case 6: return TomTom_SafeSprite("sprGUIIngameIconCheck", TomTom_SafeSprite("sprGUIIngameCodexIconCompleted", sprGUIIngameIconPOI)); // ✅ V de Certo (Explorado / Visitado)
     }
     return sprGUIIngameIconPOI;
+}
+
+function TomTom_PinColor(_type)
+{
+    if(_type == 6) return make_color_rgb(80, 240, 95); // Verde vibrante de check / explorado
+    return c_white;
 }
 
 // ---------------------------------------------------------------------------
@@ -360,7 +367,7 @@ function TomTom_InProtectedHeaderZone(_mx, _my)
 {
     var _ratio = TomTom_ScaleRatio();
     var _gw    = display_get_gui_width();
-    var _lp    = TomTom_PaletteGeometry(4); // 5 pins: index 0, 1, 2, 3, 4
+    var _lp    = TomTom_PaletteGeometry(5); // 6 pins: index 0, 1, 2, 3, 4, 5
 
     if(_mx <= _lp.x + 36 * _ratio && _my <= 96 * _ratio)
         return true;
@@ -1069,7 +1076,8 @@ function TomTom_MapInput(_m)
     }
 
     // 1. Clicar em ícone da paleta para iniciar arrasto
-    for(var i = 0; i < 5; i++)
+    var _palette_types = [0, 1, 2, 3, 4, 6];
+    for(var i = 0; i < array_length(_palette_types); i++)
     {
         var _geom = TomTom_PaletteGeometry(i);
         var _half = _geom.size * 0.5;
@@ -1081,7 +1089,7 @@ function TomTom_MapInput(_m)
             if(mouse_check_button_pressed(mb_left))
             {
                 _m.drag_active  = true;
-                _m.drag_type    = i;
+                _m.drag_type    = _palette_types[i];
                 _m.drag_pin_idx = -1;
                 mouse_clear(mb_left);
                 return;
@@ -1217,12 +1225,14 @@ function TomTom_DrawMapOverlay(_m)
         var _is_sel = (_m.selected_pin == i);
         var _iscale = _size / max(sprite_get_width(_spr), sprite_get_height(_spr));
 
+        var _pcol   = _is_sel ? c_yellow : TomTom_PinColor(_p.type);
+
         Draw.Sprite(
             _spr, 0,
             _psx, _psy,
             _iscale, _iscale,
             0,
-            _is_sel ? c_yellow : c_white,
+            _pcol,
             1.0
         );
 
@@ -1254,19 +1264,23 @@ function TomTom_DrawMapOverlay(_m)
     Draw.Sprite(_spr_trash, 0, _trash.x, _trash.y, _tscale * 1.35, _tscale * 1.35, 0, c_white, _tover ? 0.85 : 0.45);
     Draw.Sprite(_spr_trash, 0, _trash.x, _trash.y, _tscale,         _tscale,         0, _tover ? c_red : c_white, 1.0);
 
-    // 3. Paleta com os 5 botões de marcadores (📍 📦 ❓ 💀 🌀)
-    for(var b = 0; b < 5; b++)
+    // 3. Paleta com os botões de marcadores (📍 📦 ❓ 💀 🌀 ✅)
+    var _palette_types = [0, 1, 2, 3, 4, 6];
+    for(var b = 0; b < array_length(_palette_types); b++)
     {
+        var _ptype   = _palette_types[b];
         var _geom    = TomTom_PaletteGeometry(b);
-        var _spr_pal = TomTom_PinSprite(b);
+        var _spr_pal = TomTom_PinSprite(_ptype);
         var _over    = point_in_rectangle(_mx, _my,
                             _geom.x - _geom.size * 0.5, _geom.y - _geom.size * 0.5,
                             _geom.x + _geom.size * 0.5, _geom.y + _geom.size * 0.5);
         var _pscale  = (_geom.size / max(sprite_get_width(_spr_pal), sprite_get_height(_spr_pal)))
                     * (_over ? 1.2 : 1.0);
 
+        var _col_pal = _over ? c_yellow : TomTom_PinColor(_ptype);
+
         Draw.Sprite(_spr_pal, 0, _geom.x, _geom.y, _pscale, _pscale, 0,
-                    _over ? c_yellow : c_white,
+                    _col_pal,
                     _over ? 1.0 : 0.85);
     }
 
@@ -1275,7 +1289,8 @@ function TomTom_DrawMapOverlay(_m)
     {
         var _drag_spr   = TomTom_PinSprite(_m.drag_type);
         var _drag_scale = 40 * _ratio / max(sprite_get_width(_drag_spr), sprite_get_height(_drag_spr));
-        Draw.Sprite(_drag_spr, 0, _mx, _my, _drag_scale, _drag_scale, 0, c_yellow, 0.9);
+        var _drag_col   = (_m.drag_type == 6) ? make_color_rgb(100, 255, 120) : c_yellow;
+        Draw.Sprite(_drag_spr, 0, _mx, _my, _drag_scale, _drag_scale, 0, _drag_col, 0.9);
     }
 }
 
@@ -1370,7 +1385,10 @@ function TomTom_DrawTarget(
             var _sox1  = (sprite_get_xoffset(_sprite) - _sw1 * 0.5) * _iscl1;
             var _soy1  = (sprite_get_yoffset(_sprite) - _sh1 * 0.5) * _iscl1;
 
-            Draw.Sprite(_sprite, 0, _sx + _sox1, _sy + _soy1, _iscl1, _iscl1, 0, c_white, 1);
+            var _check_spr = TomTom_PinSprite(6);
+            var _t_col = (_sprite == _check_spr) ? make_color_rgb(80, 240, 95) : c_white;
+
+            Draw.Sprite(_sprite, 0, _sx + _sox1, _sy + _soy1, _iscl1, _iscl1, 0, _t_col, 1);
             GUI.DrawText(_sx, _sy + 11 * _s, _dist_str, 5, c_yellow, 1, _s * 0.60);
         }
         else if(_target_type == 2) // Baú -> centralizado perfeitamente embaixo do baú
@@ -1410,7 +1428,10 @@ function TomTom_DrawTarget(
         var _sox2  = (sprite_get_xoffset(_sprite) - _sw2 * 0.5) * _iscl2;
         var _soy2  = (sprite_get_yoffset(_sprite) - _sh2 * 0.5) * _iscl2;
 
-        Draw.Sprite(_sprite, 0, _ex + _sox2, _ey + _soy2, _iscl2, _iscl2, 0, c_white, 1);
+        var _check_spr2 = TomTom_PinSprite(6);
+        var _t_col2 = (_sprite == _check_spr2) ? make_color_rgb(80, 240, 95) : c_white;
+
+        Draw.Sprite(_sprite, 0, _ex + _sox2, _ey + _soy2, _iscl2, _iscl2, 0, _t_col2, 1);
     }
 
     // Texto posicionado com separação confortável (+3px) abaixo do ícone
@@ -1581,7 +1602,8 @@ function TomTom_DrawMinimapRadar(_m)
             var _world_x = _pin.map_x * _tile;
             var _world_y = _pin.map_y * _tile;
 
-            TomTom_DrawMinimapTarget(_world_x, _world_y, TomTom_PinSprite(_pin.type), c_yellow, _ratio, false);
+            var _pin_col = (_pin.type == 6) ? make_color_rgb(80, 240, 95) : c_yellow;
+            TomTom_DrawMinimapTarget(_world_x, _world_y, TomTom_PinSprite(_pin.type), _pin_col, _ratio, false);
         }
 
         for(var c = 0; c < array_length(_m.chests); c++)
