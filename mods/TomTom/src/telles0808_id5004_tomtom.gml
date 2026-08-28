@@ -302,15 +302,9 @@ function TomTom_PinSprite(_type)
         case 3: return sprGUIIngameIconBoss;          // 💀 Boss
         case 4: return sprGUIIngameIconTeleport;      // 🌀 Portal Azul (Teleporte)
         case 5: return sprTombStone;                  // 🪦 Lápide (Death Pin)
-        case 6: return TomTom_SafeSprite("sprGUIIngameIconCheck", TomTom_SafeSprite("sprGUIIngameCodexIconCompleted", sprGUIIngameIconPOI)); // ✅ V de Certo (Explorado / Visitado)
+        case 6: return TomTom_SafeSprite("sprGUIIngameCodexIconCompleted", sprGUIIngameIconPOI); // ✅ V de Certo Verde (Explorado / Visitado)
     }
     return sprGUIIngameIconPOI;
-}
-
-function TomTom_PinColor(_type)
-{
-    if(_type == 6) return make_color_rgb(80, 240, 95); // Verde vibrante de check / explorado
-    return c_white;
 }
 
 // ---------------------------------------------------------------------------
@@ -1225,14 +1219,12 @@ function TomTom_DrawMapOverlay(_m)
         var _is_sel = (_m.selected_pin == i);
         var _iscale = _size / max(sprite_get_width(_spr), sprite_get_height(_spr));
 
-        var _pcol   = _is_sel ? c_yellow : TomTom_PinColor(_p.type);
-
         Draw.Sprite(
             _spr, 0,
             _psx, _psy,
             _iscale, _iscale,
             0,
-            _pcol,
+            _is_sel ? c_yellow : c_white,
             1.0
         );
 
@@ -1277,10 +1269,8 @@ function TomTom_DrawMapOverlay(_m)
         var _pscale  = (_geom.size / max(sprite_get_width(_spr_pal), sprite_get_height(_spr_pal)))
                     * (_over ? 1.2 : 1.0);
 
-        var _col_pal = _over ? c_yellow : TomTom_PinColor(_ptype);
-
         Draw.Sprite(_spr_pal, 0, _geom.x, _geom.y, _pscale, _pscale, 0,
-                    _col_pal,
+                    _over ? c_yellow : c_white,
                     _over ? 1.0 : 0.85);
     }
 
@@ -1289,8 +1279,7 @@ function TomTom_DrawMapOverlay(_m)
     {
         var _drag_spr   = TomTom_PinSprite(_m.drag_type);
         var _drag_scale = 40 * _ratio / max(sprite_get_width(_drag_spr), sprite_get_height(_drag_spr));
-        var _drag_col   = (_m.drag_type == 6) ? make_color_rgb(100, 255, 120) : c_yellow;
-        Draw.Sprite(_drag_spr, 0, _mx, _my, _drag_scale, _drag_scale, 0, _drag_col, 0.9);
+        Draw.Sprite(_drag_spr, 0, _mx, _my, _drag_scale, _drag_scale, 0, c_yellow, 0.9);
     }
 }
 
@@ -1385,10 +1374,7 @@ function TomTom_DrawTarget(
             var _sox1  = (sprite_get_xoffset(_sprite) - _sw1 * 0.5) * _iscl1;
             var _soy1  = (sprite_get_yoffset(_sprite) - _sh1 * 0.5) * _iscl1;
 
-            var _check_spr = TomTom_PinSprite(6);
-            var _t_col = (_sprite == _check_spr) ? make_color_rgb(80, 240, 95) : c_white;
-
-            Draw.Sprite(_sprite, 0, _sx + _sox1, _sy + _soy1, _iscl1, _iscl1, 0, _t_col, 1);
+            Draw.Sprite(_sprite, 0, _sx + _sox1, _sy + _soy1, _iscl1, _iscl1, 0, c_white, 1);
             GUI.DrawText(_sx, _sy + 11 * _s, _dist_str, 5, c_yellow, 1, _s * 0.60);
         }
         else if(_target_type == 2) // Baú -> centralizado perfeitamente embaixo do baú
@@ -1428,10 +1414,7 @@ function TomTom_DrawTarget(
         var _sox2  = (sprite_get_xoffset(_sprite) - _sw2 * 0.5) * _iscl2;
         var _soy2  = (sprite_get_yoffset(_sprite) - _sh2 * 0.5) * _iscl2;
 
-        var _check_spr2 = TomTom_PinSprite(6);
-        var _t_col2 = (_sprite == _check_spr2) ? make_color_rgb(80, 240, 95) : c_white;
-
-        Draw.Sprite(_sprite, 0, _ex + _sox2, _ey + _soy2, _iscl2, _iscl2, 0, _t_col2, 1);
+        Draw.Sprite(_sprite, 0, _ex + _sox2, _ey + _soy2, _iscl2, _iscl2, 0, c_white, 1);
     }
 
     // Texto posicionado com separação confortável (+3px) abaixo do ícone
@@ -1447,9 +1430,74 @@ function TomTom_DrawTarget(
 }
 
 // ---------------------------------------------------------------------------
-// MINIMAP TARGET DRAW (Modo Minimapa / GPS - Fórmula Oficial BetterMap)
-// _only_edge: Se verdadeiro (ex: NPCs), só desenha na borda quando fora do minimapa
+// MINIMAP CAMERA CENTER (Compensa o travamento nas bordas do mapa)
 // ---------------------------------------------------------------------------
+
+function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX, _halfViewTilesY)
+{
+    var _mapW = 0;
+    var _mapH = 0;
+
+    // 1. Dimensões exatas em tiles a partir da superfície nativa do minimapa
+    if(is_struct(MINIMAP))
+    {
+        if(variable_struct_exists(MINIMAP, "surfaceWorld"))
+        {
+            var _sw = MINIMAP.surfaceWorld;
+            if(surface_exists(_sw))
+            {
+                _mapW = surface_get_width(_sw);
+                _mapH = surface_get_height(_sw);
+            }
+        }
+        else if(variable_struct_exists(MINIMAP, "surface"))
+        {
+            var _s = MINIMAP.surface;
+            if(surface_exists(_s))
+            {
+                _mapW = surface_get_width(_s);
+                _mapH = surface_get_height(_s);
+            }
+        }
+    }
+
+    // 2. Fallbacks pelas variáveis globais da engine
+    if(_mapW <= 0 || _mapH <= 0)
+    {
+        if(variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
+            _mapW = variable_global_get("MAP_WIDTH");
+        else if(variable_global_exists("WORLD_WIDTH") && is_numeric(variable_global_get("WORLD_WIDTH")))
+            _mapW = variable_global_get("WORLD_WIDTH");
+        else if(variable_global_exists("__MAP_WIDTH") && is_numeric(variable_global_get("__MAP_WIDTH")))
+            _mapW = variable_global_get("__MAP_WIDTH");
+
+        if(variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
+            _mapH = variable_global_get("MAP_HEIGHT");
+        else if(variable_global_exists("WORLD_HEIGHT") && is_numeric(variable_global_get("WORLD_HEIGHT")))
+            _mapH = variable_global_get("WORLD_HEIGHT");
+        else if(variable_global_exists("__MAP_HEIGHT") && is_numeric(variable_global_get("__MAP_HEIGHT")))
+            _mapH = variable_global_get("__MAP_HEIGHT");
+    }
+
+    // 3. Clamping oficial de borda
+    if(_mapW > 0 && _mapH > 0)
+    {
+        var _minX = _halfViewTilesX;
+        var _maxX = max(_minX, _mapW - _halfViewTilesX);
+        var _minY = _halfViewTilesY;
+        var _maxY = max(_minY, _mapH - _halfViewTilesY);
+
+        return {
+            x: clamp(_playerMapX, _minX, _maxX),
+            y: clamp(_playerMapY, _minY, _maxY)
+        };
+    }
+
+    return {
+        x: _playerMapX,
+        y: _playerMapY
+    };
+}
 
 function TomTom_DrawMinimapTarget(_world_x, _world_y, _sprite, _color, _ratio, _only_edge)
 {
@@ -1484,8 +1532,13 @@ function TomTom_DrawMinimapTarget(_world_x, _world_y, _sprite, _color, _ratio, _
     var _targetMapX = _world_x / _miniTile;
     var _targetMapY = _world_y / _miniTile;
 
-    var _targetMiniX = _miniCenterX + (_targetMapX - _playerMapX) * _miniScale;
-    var _targetMiniY = _miniCenterY + (_targetMapY - _playerMapY) * _miniScale;
+    var _halfViewTilesX = ((_miniRight - _miniLeft) * 0.5) / _miniScale;
+    var _halfViewTilesY = ((_miniBottom - _miniTop) * 0.5) / _miniScale;
+
+    var _cam = TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX, _halfViewTilesY);
+
+    var _targetMiniX = _miniCenterX + (_targetMapX - _cam.x) * _miniScale;
+    var _targetMiniY = _miniCenterY + (_targetMapY - _cam.y) * _miniScale;
 
     // Ícones no Minimapa ampliados para 16px (+2px)
     var _iconSize = round(16 * _ratio);
@@ -1602,8 +1655,7 @@ function TomTom_DrawMinimapRadar(_m)
             var _world_x = _pin.map_x * _tile;
             var _world_y = _pin.map_y * _tile;
 
-            var _pin_col = (_pin.type == 6) ? make_color_rgb(80, 240, 95) : c_yellow;
-            TomTom_DrawMinimapTarget(_world_x, _world_y, TomTom_PinSprite(_pin.type), _pin_col, _ratio, false);
+            TomTom_DrawMinimapTarget(_world_x, _world_y, TomTom_PinSprite(_pin.type), c_yellow, _ratio, false);
         }
 
         for(var c = 0; c < array_length(_m.chests); c++)
@@ -1721,6 +1773,10 @@ function TomTom_Draw()
                 // Isola caverna de superfície: TomTom só aponta para pins na mesma dimensão/região
                 var _pin_reg = variable_struct_exists(_pin, "region") ? _pin.region : 0;
                 if(_has_p_reg && _pin_reg != _p_reg)
+                    continue;
+
+                // Locais já explorados/visitados (Tipo 6) não poluem o radar direcional da borda da tela
+                if(_pin.type == 6)
                     continue;
 
                 var _world_x = _pin.map_x * _tile;
