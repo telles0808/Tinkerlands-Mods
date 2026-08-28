@@ -1438,10 +1438,32 @@ function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX
     var _mapW = 0;
     var _mapH = 0;
 
-    // 1. Dimensões exatas em tiles a partir da superfície nativa do minimapa
+    // 1. Dimensões exatas em tiles a partir do struct MINIMAP
     if(is_struct(MINIMAP))
     {
-        if(variable_struct_exists(MINIMAP, "surfaceWorld"))
+        if(variable_struct_exists(MINIMAP, "get_width") && is_callable(MINIMAP.get_width))
+        {
+            try {
+                var _gw_fn = MINIMAP.get_width;
+                var _w_res = is_method(_gw_fn) ? method_call(_gw_fn, []) : script_execute(_gw_fn);
+                if(is_numeric(_w_res) && _w_res > 0) _mapW = _w_res;
+            } catch(_e) {}
+        }
+        if(variable_struct_exists(MINIMAP, "get_height") && is_callable(MINIMAP.get_height))
+        {
+            try {
+                var _gh_fn = MINIMAP.get_height;
+                var _h_res = is_method(_gh_fn) ? method_call(_gh_fn, []) : script_execute(_gh_fn);
+                if(is_numeric(_h_res) && _h_res > 0) _mapH = _h_res;
+            } catch(_e2) {}
+        }
+
+        if(_mapW <= 0 && variable_struct_exists(MINIMAP, "width") && is_numeric(MINIMAP.width))
+            _mapW = MINIMAP.width;
+        if(_mapH <= 0 && variable_struct_exists(MINIMAP, "height") && is_numeric(MINIMAP.height))
+            _mapH = MINIMAP.height;
+
+        if(_mapW <= 0 && variable_struct_exists(MINIMAP, "surfaceWorld"))
         {
             var _sw = MINIMAP.surfaceWorld;
             if(surface_exists(_sw))
@@ -1450,7 +1472,7 @@ function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX
                 _mapH = surface_get_height(_sw);
             }
         }
-        else if(variable_struct_exists(MINIMAP, "surface"))
+        else if(_mapW <= 0 && variable_struct_exists(MINIMAP, "surface"))
         {
             var _s = MINIMAP.surface;
             if(surface_exists(_s))
@@ -1479,17 +1501,48 @@ function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX
             _mapH = variable_global_get("__MAP_HEIGHT");
     }
 
-    // 3. Clamping oficial de borda
+    // 3. Fallback pelas dimensões da sala (dungeons e cavernas instanciadas)
+    if((_mapW <= 0 || _mapH <= 0) && room_width > 0 && room_height > 0)
+    {
+        var _rtile = (TILE_SIZE > 0) ? TILE_SIZE : 16;
+        if(_mapW <= 0) _mapW = room_width / _rtile;
+        if(_mapH <= 0) _mapH = room_height / _rtile;
+    }
+
+    // 4. Clamping inteligente de borda e centralização para mapas pequenos
     if(_mapW > 0 && _mapH > 0)
     {
-        var _minX = _halfViewTilesX;
-        var _maxX = max(_minX, _mapW - _halfViewTilesX);
-        var _minY = _halfViewTilesY;
-        var _maxY = max(_minY, _mapH - _halfViewTilesY);
+        var _camX;
+        if(_mapW <= _halfViewTilesX * 2)
+        {
+            // O mapa cabe inteiro na largura do minimapa (cavernas/dungeons pequenas):
+            // A engine centraliza o mapa no meio da janela do minimapa.
+            _camX = _mapW * 0.5;
+        }
+        else
+        {
+            // O mapa é maior que o minimapa: a câmera rola com o player,
+            // mas trava nas bordas esquerda e direita
+            _camX = clamp(_playerMapX, _halfViewTilesX, _mapW - _halfViewTilesX);
+        }
+
+        var _camY;
+        if(_mapH <= _halfViewTilesY * 2)
+        {
+            // O mapa cabe inteiro na altura do minimapa (cavernas/dungeons pequenas):
+            // A engine centraliza o mapa no meio da janela do minimapa.
+            _camY = _mapH * 0.5;
+        }
+        else
+        {
+            // O mapa é maior que o minimapa: a câmera rola com o player,
+            // mas trava nas bordas superior e inferior
+            _camY = clamp(_playerMapY, _halfViewTilesY, _mapH - _halfViewTilesY);
+        }
 
         return {
-            x: clamp(_playerMapX, _minX, _maxX),
-            y: clamp(_playerMapY, _minY, _maxY)
+            x: _camX,
+            y: _camY
         };
     }
 
