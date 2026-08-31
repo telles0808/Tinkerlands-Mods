@@ -1262,9 +1262,11 @@ function GPS_DrawMapOverlay(_m)
                         _trash.x + _trash.size * 0.5, _trash.y + _trash.size * 0.5);
     var _tscale    = (_trash.size / max(sprite_get_width(_spr_trash), sprite_get_height(_spr_trash)))
                     * (_tover ? 1.25 : 1.0);
+    var _sox_trash = (sprite_get_xoffset(_spr_trash) - sprite_get_width(_spr_trash) * 0.5) * _tscale;
+    var _soy_trash = (sprite_get_yoffset(_spr_trash) - sprite_get_height(_spr_trash) * 0.5) * _tscale;
 
-    Draw.Sprite(_spr_trash, 0, _trash.x, _trash.y, _tscale * 1.35, _tscale * 1.35, 0, c_white, _tover ? 0.85 : 0.45);
-    Draw.Sprite(_spr_trash, 0, _trash.x, _trash.y, _tscale,         _tscale,         0, _tover ? c_red : c_white, 1.0);
+    Draw.Sprite(_spr_trash, 0, _trash.x + _sox_trash, _trash.y + _soy_trash, _tscale * 1.35, _tscale * 1.35, 0, c_white, _tover ? 0.85 : 0.45);
+    Draw.Sprite(_spr_trash, 0, _trash.x + _sox_trash, _trash.y + _soy_trash, _tscale,         _tscale,         0, _tover ? c_red : c_white, 1.0);
 
     var _palette_types = [0, 1, 2, 3, 4, 6];
     for(var b = 0; b < array_length(_palette_types); b++)
@@ -1278,22 +1280,26 @@ function GPS_DrawMapOverlay(_m)
         var _pscale  = (_geom.size / max(sprite_get_width(_spr_pal), sprite_get_height(_spr_pal)))
                     * (_over ? 1.2 : 1.0);
 
-        Draw.Sprite(_spr_pal, 0, _geom.x, _geom.y, _pscale, _pscale, 0,
+        var _sox_pal = (sprite_get_xoffset(_spr_pal) - sprite_get_width(_spr_pal) * 0.5) * _pscale;
+        var _soy_pal = (sprite_get_yoffset(_spr_pal) - sprite_get_height(_spr_pal) * 0.5) * _pscale;
+
+        Draw.Sprite(_spr_pal, 0, _geom.x + _sox_pal, _geom.y + _soy_pal, _pscale, _pscale, 0,
                     _over ? c_yellow : c_white,
                     _over ? 1.0 : 0.85);
     }
 
     var _geom_tomb   = GPS_PaletteGeometry(6);
     var _spr_tomb    = sprTombStone;
-    var _tomb_x      = _geom_tomb.x + round(2 * _ratio);
-    var _tomb_y      = _geom_tomb.y + round(5 * _ratio);
     var _tover_tomb  = point_in_rectangle(_mx, _my,
                             _geom_tomb.x - _geom_tomb.size * 0.5, _geom_tomb.y - _geom_tomb.size * 0.5,
                             _geom_tomb.x + _geom_tomb.size * 0.5, _geom_tomb.y + _geom_tomb.size * 0.5);
     var _tscale_tomb = (_geom_tomb.size / max(sprite_get_width(_spr_tomb), sprite_get_height(_spr_tomb)))
                        * (_tover_tomb ? 1.2 : 1.0);
 
-    Draw.Sprite(_spr_tomb, 0, _tomb_x, _tomb_y, _tscale_tomb, _tscale_tomb, 0,
+    var _sox_tomb    = (sprite_get_xoffset(_spr_tomb) - sprite_get_width(_spr_tomb) * 0.5) * _tscale_tomb;
+    var _soy_tomb    = (sprite_get_yoffset(_spr_tomb) - sprite_get_height(_spr_tomb) * 0.5) * _tscale_tomb;
+
+    Draw.Sprite(_spr_tomb, 0, _geom_tomb.x + _sox_tomb, _geom_tomb.y + _soy_tomb, _tscale_tomb, _tscale_tomb, 0,
                 _m.auto_death_pin ? (_tover_tomb ? c_yellow : c_white) : c_gray,
                 _m.auto_death_pin ? 1.0 : 0.45);
 
