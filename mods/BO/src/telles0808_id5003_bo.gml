@@ -1633,6 +1633,24 @@ function BO_ItemIsMovable(_item, _container = undefined, _slot_x = undefined, _s
     if(!ds_map_exists(_item, 6) || !is_numeric(_item[? 6]) || _item[? 6] < 1)
         return false;
 
+    // 0. Official Engine API check for favorite / locked item
+    try
+    {
+        if(is_struct(Item) && variable_struct_exists(Item, "GetProperty") && variable_global_exists("E_ITEM_DATA"))
+        {
+            var _fav_enum = is_struct(global.E_ITEM_DATA) && variable_struct_exists(global.E_ITEM_DATA, "favorite") ? global.E_ITEM_DATA.favorite : E_ITEM_DATA.favorite;
+            var _is_fav = Item.GetProperty(_item, _fav_enum);
+            if(_is_fav == 1 || _is_fav == true || _is_fav == "1" || _is_fav == "true")
+                return false;
+        }
+        else
+        {
+            if(Item.GetProperty(_item, E_ITEM_DATA.favorite))
+                return false;
+        }
+    }
+    catch(_e_fav_engine) {}
+
     // 1. Check direct keys on item ds_map
     if(ds_map_exists(_item, "locked") && (_item[? "locked"] == 1 || _item[? "locked"] == true || _item[? "locked"] == "1"))
         return false;

@@ -281,6 +281,15 @@ if (is_callable(_move_fn)) {
 }
 ```
 
+### Checking Favorite / Locked Items
+Use the official native engine API call to check whether an item is locked or marked as favorite:
+
+```gml
+if (Item.GetProperty(itemMap, E_ITEM_DATA.favorite)) {
+    // Item is marked as favorite - skip automated moves/deposit
+}
+```
+
 ### Category Bitmask Filtering
 Items store their category identifier at key index `7` in their `ds_map`:
 
