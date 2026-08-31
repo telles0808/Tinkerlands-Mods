@@ -113,6 +113,36 @@ if ($steamMods -and (Test-Path $steamMods)) {
     Write-Host ("Implantado com sucesso em: " + (Join-Path $steamMods $ModFileName)) -ForegroundColor Green
 }
 
+# Auto-detect Windows monitors sorted physically from Left to Right and write monitor.cfg
+try {
+    Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
+    $screens = [System.Windows.Forms.Screen]::AllScreens | Sort-Object { $_.Bounds.X }
+    if ($screens -and $screens.Count -gt 0) {
+        $lines = @()
+        $idx = 1
+        foreach ($s in $screens) {
+            $bx = [int]$s.Bounds.X
+            $by = [int]$s.Bounds.Y
+            $bw = [int]$s.Bounds.Width
+            $bh = [int]$s.Bounds.Height
+            $dev = $s.DeviceName
+            $lines += "$idx|$bx|$by|$bw|$bh|$dev"
+            $idx++
+        }
+
+        $appDataDir = Join-Path $env:LOCALAPPDATA 'Tinkerlands'
+        if (Test-Path $appDataDir) {
+            $lines | Set-Content (Join-Path $appDataDir "monitor.cfg") -Encoding UTF8
+            $tempDir = Join-Path $appDataDir 'temp'
+            if (Test-Path $tempDir) {
+                $lines | Set-Content (Join-Path $tempDir "monitor.cfg") -Encoding UTF8
+            }
+            Write-Host ("Configuracao de monitores atualizada a partir do Windows ($($screens.Count) telas detectadas).") -ForegroundColor Green
+        }
+    }
+} catch {
+    Write-Host "Aviso: Nao foi possivel autodetectar monitores do Windows no build." -ForegroundColor Yellow
+}
 
 $packver = Join-Path $env:LOCALAPPDATA 'Tinkerlands\packver'
 if (Test-Path $packver) {
