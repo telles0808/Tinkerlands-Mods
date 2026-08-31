@@ -114,7 +114,7 @@ Each mod folder includes a 1-click Windows Command Script (`.cmd`) to compile, p
 | **Fog** | [`mods/Fog/src/telles0808_id5001_fog.cmd`](mods/Fog/src/telles0808_id5001_fog.cmd) |
 | **RealClock** | [`mods/RealClock/src/telles0808_id5002_realclock.cmd`](mods/RealClock/src/telles0808_id5002_realclock.cmd) |
 | **Better Organizer** | [`mods/BO/src/telles0808_id5003_bo.cmd`](mods/BO/src/telles0808_id5003_bo.cmd) |
-| **TomTom** | [`mods/TomTom/src/telles0808_id5004_tomtom.cmd`](mods/TomTom/src/telles0808_id5004_tomtom.cmd) |
+| **GPS Radar** | [`mods/GPS_Radar/src/telles0808_id5004_gps.cmd`](mods/GPS_Radar/src/telles0808_id5004_gps.cmd) |
 | **Monitor Switcher** | [`mods/Monitor/src/telles0808_id5005_monitor.cmd`](mods/Monitor/src/telles0808_id5005_monitor.cmd) |
 
 ---

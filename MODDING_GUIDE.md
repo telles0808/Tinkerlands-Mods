@@ -221,7 +221,7 @@ Input.DisableMenuInputs(0.1);
 
 ---
 
-## 5. 🗺️ Minimap & Mapping Architecture (TomTom)
+## 5. 🗺️ Minimap & Mapping Architecture (GPS Radar)
 
 ### Minimap Edge Clamping & Surface Bounds
 In the HUD, the native minimap viewport is clamped to the world's physical boundaries (`0` to `MAP_WIDTH` and `MAP_HEIGHT`). When the player approaches the outer edge of an island, the camera stops scrolling and the player moves out of the center toward the border.
