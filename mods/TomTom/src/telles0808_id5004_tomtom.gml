@@ -1435,81 +1435,46 @@ function TomTom_DrawTarget(
 
 function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX, _halfViewTilesY)
 {
-    var _mapW = 0;
-    var _mapH = 0;
+    var _tile = (TILE_SIZE > 0) ? TILE_SIZE : 16;
+    var _mapW = (room_width > 0) ? (room_width / _tile) : 0;
+    var _mapH = (room_height > 0) ? (room_height / _tile) : 0;
 
-    // 1. Dimensões exatas em tiles a partir do struct MINIMAP
-    if(is_struct(MINIMAP))
-    {
-        if(variable_struct_exists(MINIMAP, "get_width") && is_callable(MINIMAP.get_width))
-        {
-            try {
-                var _gw_fn = MINIMAP.get_width;
-                var _w_res = is_method(_gw_fn) ? method_call(_gw_fn, []) : script_execute(_gw_fn);
-                if(is_numeric(_w_res) && _w_res > 0) _mapW = _w_res;
-            } catch(_e) {}
-        }
-        if(variable_struct_exists(MINIMAP, "get_height") && is_callable(MINIMAP.get_height))
-        {
-            try {
-                var _gh_fn = MINIMAP.get_height;
-                var _h_res = is_method(_gh_fn) ? method_call(_gh_fn, []) : script_execute(_gh_fn);
-                if(is_numeric(_h_res) && _h_res > 0) _mapH = _h_res;
-            } catch(_e2) {}
-        }
-
-        if(_mapW <= 0 && variable_struct_exists(MINIMAP, "width") && is_numeric(MINIMAP.width))
-            _mapW = MINIMAP.width;
-        if(_mapH <= 0 && variable_struct_exists(MINIMAP, "height") && is_numeric(MINIMAP.height))
-            _mapH = MINIMAP.height;
-
-        if(_mapW <= 0 && variable_struct_exists(MINIMAP, "surfaceWorld"))
-        {
-            var _sw = MINIMAP.surfaceWorld;
-            if(surface_exists(_sw))
-            {
-                _mapW = surface_get_width(_sw);
-                _mapH = surface_get_height(_sw);
-            }
-        }
-        else if(_mapW <= 0 && variable_struct_exists(MINIMAP, "surface"))
-        {
-            var _s = MINIMAP.surface;
-            if(surface_exists(_s))
-            {
-                _mapW = surface_get_width(_s);
-                _mapH = surface_get_height(_s);
-            }
-        }
-    }
-
-    // 2. Fallbacks pelas variáveis globais da engine
+    // Fallbacks se room_width/room_height não estiverem disponíveis
     if(_mapW <= 0 || _mapH <= 0)
     {
-        if(variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
+        if(is_struct(MINIMAP))
+        {
+            if(variable_struct_exists(MINIMAP, "width") && is_numeric(MINIMAP.width) && MINIMAP.width > 0)
+                _mapW = MINIMAP.width;
+            if(variable_struct_exists(MINIMAP, "height") && is_numeric(MINIMAP.height) && MINIMAP.height > 0)
+                _mapH = MINIMAP.height;
+
+            if(_mapW <= 0 && variable_struct_exists(MINIMAP, "surfaceWorld"))
+            {
+                var _sw = MINIMAP.surfaceWorld;
+                if(surface_exists(_sw))
+                {
+                    _mapW = surface_get_width(_sw);
+                    _mapH = surface_get_height(_sw);
+                }
+            }
+        }
+
+        if(_mapW <= 0 && variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
             _mapW = variable_global_get("MAP_WIDTH");
-        else if(variable_global_exists("WORLD_WIDTH") && is_numeric(variable_global_get("WORLD_WIDTH")))
-            _mapW = variable_global_get("WORLD_WIDTH");
-        else if(variable_global_exists("__MAP_WIDTH") && is_numeric(variable_global_get("__MAP_WIDTH")))
-            _mapW = variable_global_get("__MAP_WIDTH");
-
-        if(variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
+        if(_mapH <= 0 && variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
             _mapH = variable_global_get("MAP_HEIGHT");
-        else if(variable_global_exists("WORLD_HEIGHT") && is_numeric(variable_global_get("WORLD_HEIGHT")))
-            _mapH = variable_global_get("WORLD_HEIGHT");
-        else if(variable_global_exists("__MAP_HEIGHT") && is_numeric(variable_global_get("__MAP_HEIGHT")))
-            _mapH = variable_global_get("__MAP_HEIGHT");
     }
-
-    // 3. Fallback pelas dimensões da sala (dungeons e cavernas instanciadas)
-    if((_mapW <= 0 || _mapH <= 0) && room_width > 0 && room_height > 0)
+    else
     {
-        var _rtile = (TILE_SIZE > 0) ? TILE_SIZE : 16;
-        if(_mapW <= 0) _mapW = room_width / _rtile;
-        if(_mapH <= 0) _mapH = room_height / _rtile;
+        // Se o struct MINIMAP especificar um tamanho menor que room_width, respeita
+        if(is_struct(MINIMAP) && variable_struct_exists(MINIMAP, "width") && is_numeric(MINIMAP.width) && MINIMAP.width > 0 && MINIMAP.width < _mapW)
+            _mapW = MINIMAP.width;
+        if(is_struct(MINIMAP) && variable_struct_exists(MINIMAP, "height") && is_numeric(MINIMAP.height) && MINIMAP.height > 0 && MINIMAP.height < _mapH)
+            _mapH = MINIMAP.height;
     }
 
-    // 4. Clamping inteligente de borda e centralização para mapas pequenos
+    // Clamping inteligente de borda e centralização para mapas pequenos
     if(_mapW > 0 && _mapH > 0)
     {
         var _camX;
