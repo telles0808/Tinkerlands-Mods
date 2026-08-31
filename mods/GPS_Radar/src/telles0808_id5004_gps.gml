@@ -1,4 +1,4 @@
-﻿/*
+/*
     ========================================================================
     TINKERLANDS - GPS Radar
     Author: Telles0808
@@ -141,6 +141,7 @@ function GPS_EnsureDefaults(_m)
     if(!variable_instance_exists(_m, "track_npcs"))       _m.track_npcs       = true;
     if(!variable_instance_exists(_m, "track_chests"))     _m.track_chests     = true;
     if(!variable_instance_exists(_m, "track_mobs"))       _m.track_mobs       = true;
+    if(!variable_instance_exists(_m, "auto_death_pin"))   _m.auto_death_pin   = true;
     if(!variable_instance_exists(_m, "player_was_alive")) _m.player_was_alive = true;
     if(!variable_instance_exists(_m, "npcs"))             _m.npcs             = [];
     if(!variable_instance_exists(_m, "mobs"))             _m.mobs             = [];
@@ -154,6 +155,7 @@ function GPS_Create()
     track_npcs           = true;
     track_chests         = true;
     track_mobs           = true;
+    auto_death_pin       = true;
 
     player_was_alive     = true;
 
@@ -339,7 +341,7 @@ function GPS_InProtectedHeaderZone(_mx, _my)
 {
     var _ratio = GPS_ScaleRatio();
     var _gw    = display_get_gui_width();
-    var _lp    = GPS_PaletteGeometry(5);
+    var _lp    = GPS_PaletteGeometry(6);
 
     if(_mx <= _lp.x + 36 * _ratio && _my <= 96 * _ratio)
         return true;
@@ -590,19 +592,22 @@ function GPS_Update()
     {
         _m.player_was_alive = false;
 
-        var _tile = TILE_SIZE > 0 ? TILE_SIZE : 16;
-        var _death_map_x = MY_PLAYER.x / _tile;
-        var _death_map_y = MY_PLAYER.y / _tile;
+        if(_m.auto_death_pin)
+        {
+            var _tile = TILE_SIZE > 0 ? TILE_SIZE : 16;
+            var _death_map_x = MY_PLAYER.x / _tile;
+            var _death_map_y = MY_PLAYER.y / _tile;
 
-        var _death_reg = (variable_instance_exists(MY_PLAYER, "netRegion") && !is_undefined(MY_PLAYER.netRegion)) ? MY_PLAYER.netRegion : 0;
-        array_push(_m.pins, {
-            map_x:  _death_map_x,
-            map_y:  _death_map_y,
-            type:   5,
-            region: _death_reg
-        });
+            var _death_reg = (variable_instance_exists(MY_PLAYER, "netRegion") && !is_undefined(MY_PLAYER.netRegion)) ? MY_PLAYER.netRegion : 0;
+            array_push(_m.pins, {
+                map_x:  _death_map_x,
+                map_y:  _death_map_y,
+                type:   5,
+                region: _death_reg
+            });
 
-        GPS_SavePins(_m);
+            GPS_SavePins(_m);
+        }
     }
     else if(!_m.player_was_alive && _is_alive)
     {
@@ -1029,6 +1034,21 @@ function GPS_MapInput(_m)
         }
     }
 
+    var _geom_tomb = GPS_PaletteGeometry(6);
+    var _half_tomb = _geom_tomb.size * 0.5;
+    if(point_in_rectangle(_mx, _my, _geom_tomb.x - _half_tomb, _geom_tomb.y - _half_tomb, _geom_tomb.x + _half_tomb, _geom_tomb.y + _half_tomb))
+    {
+        Input.DisableMenuInputs(0.1);
+
+        if(mouse_check_button_pressed(mb_left))
+        {
+            _m.auto_death_pin = !_m.auto_death_pin;
+            GPS_SavePins(_m);
+            mouse_clear(mb_left);
+            return;
+        }
+    }
+
     var _mini  = GPS_GetMinimap();
     var _left  = _mini.x;
     var _top   = _mini.y;
@@ -1262,6 +1282,18 @@ function GPS_DrawMapOverlay(_m)
                     _over ? c_yellow : c_white,
                     _over ? 1.0 : 0.85);
     }
+
+    var _geom_tomb   = GPS_PaletteGeometry(6);
+    var _spr_tomb    = sprTombStone;
+    var _tover_tomb  = point_in_rectangle(_mx, _my,
+                            _geom_tomb.x - _geom_tomb.size * 0.5, _geom_tomb.y - _geom_tomb.size * 0.5,
+                            _geom_tomb.x + _geom_tomb.size * 0.5, _geom_tomb.y + _geom_tomb.size * 0.5);
+    var _tscale_tomb = (_geom_tomb.size / max(sprite_get_width(_spr_tomb), sprite_get_height(_spr_tomb)))
+                       * (_tover_tomb ? 1.2 : 1.0);
+
+    Draw.Sprite(_spr_tomb, 0, _geom_tomb.x, _geom_tomb.y, _tscale_tomb, _tscale_tomb, 0,
+                _m.auto_death_pin ? (_tover_tomb ? c_yellow : c_white) : c_gray,
+                _m.auto_death_pin ? 1.0 : 0.45);
 
     if(_m.drag_active && _m.drag_type >= 0)
     {
@@ -2019,7 +2051,19 @@ function GPS_LoadPins(_m)
                     if(_cp3 > 0)
                     {
                         var _s_chest = string_copy(_cr2, 1, _cp3 - 1);
-                        var _s_mob   = string_delete(_cr2, 1, _cp3);
+                        var _cr3     = string_delete(_cr2, 1, _cp3);
+                        var _cp4     = string_pos("|", _cr3);
+                        if(_cp4 > 0)
+                        {
+                            var _s_mob   = string_copy(_cr3, 1, _cp4 - 1);
+                            var _s_death = string_delete(_cr3, 1, _cp4);
+                            _m.auto_death_pin = (real(_s_death) == 1);
+                        }
+                        else
+                        {
+                            var _s_mob = _cr3;
+                            _m.auto_death_pin = true;
+                        }
 
                         _m.radar_mode   = (real(_s_mode) == 1);
                         _m.track_npcs   = (real(_s_npc) == 1);

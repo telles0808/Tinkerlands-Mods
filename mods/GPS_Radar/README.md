@@ -108,9 +108,14 @@ The green completed/check pin marks cleared points of interest:
 
 ---
 
-## 🪦 Automatic Death Waypoint
+## 🪦 Automatic Death Waypoint & Toggle Button
 
-When the player dies, a tombstone pin (`sprTombStone`) is automatically recorded at the exact death tile and region. It persists after respawning and can be removed via the expanded map trash bin.
+When enabled, a tombstone pin (`sprTombStone`) is automatically placed at the exact death tile and region upon player death, persisting after respawn until dragged into the trash bin.
+
+- **Palette Toggle Button:** Located in the top-left map palette next to the checkmark pin.
+- **Active (Color):** Automatic tombstone pin creation is **ON**.
+- **Inactive (Gray):** Automatic tombstone pin creation is **OFF**.
+- Click the tombstone button on the large map to toggle this feature at any time (saved persistently in `gps_pins.cfg`).
 
 ---
 
@@ -128,6 +133,7 @@ When the player dies, a tombstone pin (`sprTombStone`) is automatically recorded
 | --- | --- |
 | Switch HUD / Minimap Mode | Click large Sonar button |
 | Toggle Tracked Categories | Click 👤 (NPCs), 📦 (Chests/Pins), or 👹 (Mobs) |
+| Toggle Auto Death Tombstone | Click 🪦 (Tombstone) button on top-left map palette |
 | Open / Close Expanded Map | Press <kbd>M</kbd> or click the map icon |
 | Place Custom Pin | Drag pin from upper-left palette onto map |
 | Move Existing Pin | Click and drag pin to new location |
