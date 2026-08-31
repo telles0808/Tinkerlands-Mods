@@ -1323,46 +1323,6 @@ function TomTom_DrawPlayerCoords()
         1,
         _textScale
     );
-
-    var _m = ModInstance.Get("TomTom");
-    if(_m != undefined && !variable_instance_exists(_m, "dbg_dump_done"))
-    {
-        _m.dbg_dump_done = true;
-        var _df = file_text_open_write("minimap_info.txt");
-        if(_df >= 0)
-        {
-            file_text_write_string(_df, "ROOM: " + string(room_width) + "x" + string(room_height) + " (tiles: " + string(round(room_width/16)) + "x" + string(round(room_height/16)) + ")");
-            file_text_writeln(_df);
-            file_text_write_string(_df, "PLAYER: " + string(MY_PLAYER.x) + "," + string(MY_PLAYER.y) + " (tile: " + string(_px) + "," + string(_py) + ")");
-            file_text_writeln(_df);
-            if(variable_global_exists("MAP_WIDTH"))
-            {
-                file_text_write_string(_df, "GLOBAL MAP_WIDTH: " + string(global.MAP_WIDTH) + " MAP_HEIGHT: " + string(global.MAP_HEIGHT));
-                file_text_writeln(_df);
-            }
-            if(is_struct(MINIMAP))
-            {
-                var _k = variable_struct_get_names(MINIMAP);
-                for(var i = 0; i < array_length(_k); i++)
-                {
-                    var _val = variable_struct_get(MINIMAP, _k[i]);
-                    file_text_write_string(_df, "MINIMAP." + string(_k[i]) + " = " + string(_val));
-                    file_text_writeln(_df);
-                }
-                if(variable_struct_exists(MINIMAP, "surfaceWorld") && surface_exists(MINIMAP.surfaceWorld))
-                {
-                    file_text_write_string(_df, "surfaceWorld size: " + string(surface_get_width(MINIMAP.surfaceWorld)) + "x" + string(surface_get_height(MINIMAP.surfaceWorld)));
-                    file_text_writeln(_df);
-                }
-                if(variable_struct_exists(MINIMAP, "surface") && surface_exists(MINIMAP.surface))
-                {
-                    file_text_write_string(_df, "surface size: " + string(surface_get_width(MINIMAP.surface)) + "x" + string(surface_get_height(MINIMAP.surface)));
-                    file_text_writeln(_df);
-                }
-            }
-            file_text_close(_df);
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1475,93 +1435,32 @@ function TomTom_DrawTarget(
 
 function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX, _halfViewTilesY)
 {
-    var _mapW = 0;
-    var _mapH = 0;
-
-    if(is_struct(MINIMAP))
-    {
-        if(variable_struct_exists(MINIMAP, "surfaceWorld") && surface_exists(MINIMAP.surfaceWorld))
-        {
-            _mapW = surface_get_width(MINIMAP.surfaceWorld);
-            _mapH = surface_get_height(MINIMAP.surfaceWorld);
-        }
-        else if(variable_struct_exists(MINIMAP, "surface") && surface_exists(MINIMAP.surface))
-        {
-            _mapW = surface_get_width(MINIMAP.surface);
-            _mapH = surface_get_height(MINIMAP.surface);
-        }
-    }
+    var _tile = (TILE_SIZE > 0) ? TILE_SIZE : 16;
+    var _mapW = (room_width > 0) ? (room_width / _tile) : 0;
+    var _mapH = (room_height > 0) ? (room_height / _tile) : 0;
 
     if(_mapW <= 0 || _mapH <= 0)
     {
-        if(variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
+        if(is_struct(MINIMAP))
+        {
+            if(variable_struct_exists(MINIMAP, "surfaceWorld") && surface_exists(MINIMAP.surfaceWorld))
+            {
+                _mapW = surface_get_width(MINIMAP.surfaceWorld);
+                _mapH = surface_get_height(MINIMAP.surfaceWorld);
+            }
+            else if(variable_struct_exists(MINIMAP, "surface") && surface_exists(MINIMAP.surface))
+            {
+                _mapW = surface_get_width(MINIMAP.surface);
+                _mapH = surface_get_height(MINIMAP.surface);
+            }
+        }
+
+        if(_mapW <= 0 && variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
             _mapW = variable_global_get("MAP_WIDTH");
-        if(variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
+        if(_mapH <= 0 && variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
             _mapH = variable_global_get("MAP_HEIGHT");
     }
 
-    // 1. Detecção adaptativa para Cavernas e Dungeons pequenas
-    // Em cavernas com dimensões reduzidas que cabem no minimapa, a engine nativa centraliza a área
-    var _m = ModInstance.Get("TomTom");
-    if(_m != undefined)
-    {
-        var _tile = TILE_SIZE > 0 ? TILE_SIZE : 16;
-        var _minX = _playerMapX;
-        var _maxX = _playerMapX;
-        var _minY = _playerMapY;
-        var _maxY = _playerMapY;
-        var _count = 1;
-
-        if(variable_instance_exists(_m, "chests") && is_array(_m.chests))
-        {
-            for(var c = 0; c < array_length(_m.chests); c++)
-            {
-                var _ch = _m.chests[c];
-                if(instance_exists(_ch.inst))
-                {
-                    var _cx = _ch.x / _tile;
-                    var _cy = _ch.y / _tile;
-                    if(_cx < _minX) _minX = _cx;
-                    if(_cx > _maxX) _maxX = _cx;
-                    if(_cy < _minY) _minY = _cy;
-                    if(_cy > _maxY) _maxY = _cy;
-                    _count++;
-                }
-            }
-        }
-
-        if(variable_instance_exists(_m, "mobs") && is_array(_m.mobs))
-        {
-            for(var mb = 0; mb < array_length(_m.mobs); mb++)
-            {
-                var _mo = _m.mobs[mb];
-                if(instance_exists(_mo.inst))
-                {
-                    var _mx = _mo.x / _tile;
-                    var _my = _mo.y / _tile;
-                    if(_mx < _minX) _minX = _mx;
-                    if(_mx > _maxX) _maxX = _mx;
-                    if(_my < _minY) _minY = _my;
-                    if(_my > _maxY) _maxY = _my;
-                    _count++;
-                }
-            }
-        }
-
-        var _spanX = _maxX - _minX;
-        var _spanY = _maxY - _minY;
-
-        // Se todas as entidades ativas da sala cabem na janela do minimapa, fixa a câmera no centro da caverna
-        if(_count >= 2 && _spanX > 0 && _spanY > 0 && _spanX <= _halfViewTilesX * 1.8 && _spanY <= _halfViewTilesY * 1.8)
-        {
-            return {
-                x: (_minX + _maxX) * 0.5,
-                y: (_minY + _maxY) * 0.5
-            };
-        }
-    }
-
-    // 2. Mapa Grande / Overworld padrão: Clamping nas bordas da ilha
     if(_mapW > 0 && _mapH > 0)
     {
         var _camX;
