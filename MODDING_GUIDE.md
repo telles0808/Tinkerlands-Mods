@@ -223,28 +223,17 @@ Input.DisableMenuInputs(0.1);
 
 ## 5. 🗺️ Minimap & Mapping Architecture (TomTom)
 
-### Minimap Edge Clamping & Surface Bounds
-In the HUD, the native minimap viewport is clamped to the world's physical boundaries (`0` to `MAP_WIDTH` and `MAP_HEIGHT`). When the player approaches the outer edge of an island, the camera stops scrolling and the player moves out of the center toward the border.
-
-A naive relative calculation (`target - player`) assumes the player remains in the center, causing pins to drift on the minimap near borders.
-
-**Clean Clamped Camera Solution:**
-1. Extract dynamic world dimensions in tiles from `MINIMAP.surfaceWorld` via `surface_get_width` / `surface_get_height` (or global `MAP_WIDTH` / `MAP_HEIGHT`).
-2. Calculate the half-view radius in tiles:
-   ```gml
-   var _halfViewX = ((_miniRight - _miniLeft) * 0.5) / _miniScale;
-   var _halfViewY = ((_miniBottom - _miniTop) * 0.5) / _miniScale;
-   ```
-3. Clamp the virtual minimap camera:
-   ```gml
-   var _camX = (_mapW <= _halfViewX * 2) ? (_mapW * 0.5) : clamp(_playerMapX, _halfViewX, _mapW - _halfViewX);
-   var _camY = (_mapH <= _halfViewY * 2) ? (_mapH * 0.5) : clamp(_playerMapY, _halfViewY, _mapH - _halfViewY);
-   ```
-4. Project target coordinates using the clamped camera:
-   ```gml
-   var _targetMiniX = _miniCenterX + (_targetMapX - _camX) * _miniScale;
-   var _targetMiniY = _miniCenterY + (_targetMapY - _camY) * _miniScale;
-   ```
+### Minimap Adaptive Projection: Overworld vs Small Dungeons
+1. **Large Maps (Overworld Islands):**
+   - The map extends across a large region (e.g. 500x500 tiles).
+   - The minimap rolls with the player in open areas, but clamps at outer borders:
+     ```gml
+     var _camX = clamp(_playerMapX, _halfViewX, _mapW - _halfViewX);
+     var _camY = clamp(_playerMapY, _halfViewY, _mapH - _halfViewY);
+     ```
+2. **Small Caves & Dungeons (Static Viewports):**
+   - In small instanced caves (like the Halloween pumpkin dungeon), the entire active area fits within the minimap window, and the native game renders the cave centered statically without camera scrolling.
+   - The mod dynamically computes the active entity cluster bounding box (`[minX, maxX, minY, maxY]`). When the active span fits within the minimap viewport (`spanX <= halfViewX * 1.8`), the camera center is fixed at `((minX + maxX) * 0.5, (minY + maxY) * 0.5)`, keeping static pins perfectly stationary on the terrain while allowing the player icon to navigate freely.
 
 ### Expedition Island Isolation (`WORLD` Struct)
 Procedural expedition islands on the ship's navigation matrix are saved under canonical file patterns: `RandomIsland<col>x<row>.sav` (e.g., `RandomIsland2x0`).
