@@ -61,10 +61,95 @@ function Monitor_SplitPipes(_str)
     return _arr;
 }
 
+function Monitor_DetectMonitors()
+{
+    var _monitors = [];
+
+    // 1. Try native GameMaker window_get_visible_rects()
+    try
+    {
+        var _fn_rects = undefined;
+        if(variable_global_exists("window_get_visible_rects"))
+            _fn_rects = variable_global_get("window_get_visible_rects");
+        else
+        {
+            var _asset_idx = asset_get_index("window_get_visible_rects");
+            if(_asset_idx >= 0) _fn_rects = _asset_idx;
+        }
+
+        if(!is_undefined(_fn_rects))
+        {
+            var _rects = is_callable(_fn_rects) ? (is_method(_fn_rects) ? method_call(_fn_rects, []) : script_execute(_fn_rects)) : undefined;
+
+            if(is_array(_rects) && array_length(_rects) > 0)
+            {
+                if(is_array(_rects[0]))
+                {
+                    for(var i = 0; i < array_length(_rects); i++)
+                    {
+                        var _r = _rects[i];
+                        if(is_array(_r) && array_length(_r) >= 4)
+                        {
+                            array_push(_monitors, {
+                                x: real(_r[0]),
+                                y: real(_r[1]),
+                                w: real(_r[2]),
+                                h: real(_r[3])
+                            });
+                        }
+                    }
+                }
+                else if(array_length(_rects) % 4 == 0)
+                {
+                    for(var i = 0; i < array_length(_rects); i += 4)
+                    {
+                        array_push(_monitors, {
+                            x: real(_rects[i]),
+                            y: real(_rects[i + 1]),
+                            w: real(_rects[i + 2]),
+                            h: real(_rects[i + 3])
+                        });
+                    }
+                }
+            }
+        }
+    }
+    catch(_e_detect) {}
+
+    // 2. Fallback: probe current window / primary display if detection returned empty
+    if(array_length(_monitors) <= 0)
+    {
+        var _dw = display_get_width();
+        var _dh = display_get_height();
+
+        if(_dw <= 0) _dw = 1920;
+        if(_dh <= 0) _dh = 1080;
+
+        // Primary display at (0,0)
+        array_push(_monitors, { x: 0, y: 0, w: _dw, h: _dh });
+
+        // Probe window position if window is currently on a secondary screen
+        var _wx = window_get_x();
+        if(_wx < -200)
+        {
+            var _left_x = -_dw;
+            if(abs(_wx) > 1000) _left_x = round(_wx);
+            array_push(_monitors, { x: _left_x, y: 0, w: _dw, h: _dh });
+        }
+        else if(_wx > _dw - 200)
+        {
+            array_push(_monitors, { x: _dw, y: 0, w: _dw, h: _dh });
+        }
+    }
+
+    return _monitors;
+}
+
 function Monitor_SetupDefaults(_state)
 {
     _state.monitors = [];
 
+    // Read custom monitor.cfg if provided by user
     if(file_exists("monitor.cfg"))
     {
         var _file = file_text_open_read("monitor.cfg");
@@ -80,13 +165,14 @@ function Monitor_SetupDefaults(_state)
                 {
                     var _lbl = _parts[0];
                     var _x_val = real(_parts[1]);
+                    var _y_val = real(_parts[2]);
                     var _w_val = real(_parts[3]);
                     var _h_val = real(_parts[4]);
 
                     array_push(_state.monitors, {
                         label: _lbl,
                         x: _x_val,
-                        y: 0,
+                        y: _y_val,
                         w: _w_val,
                         h: _h_val
                     });
@@ -96,26 +182,54 @@ function Monitor_SetupDefaults(_state)
         }
     }
 
+    // Auto-detect connected monitors if monitor.cfg is not found or empty
     if(array_length(_state.monitors) <= 0)
     {
-        array_push(_state.monitors, { label: "2", x: -1920, y: 0, w: 1920, h: 1080 });
-        array_push(_state.monitors, { label: "1", x: 0,     y: 0, w: 1920, h: 1080 });
+        _state.monitors = Monitor_DetectMonitors();
+    }
+
+    // Sort monitors by physical X coordinate ascending (left-to-right spatial order)
+    for(var left = 0; left < array_length(_state.monitors) - 1; left++)
+    {
+        var _best = left;
+        for(var right = left + 1; right < array_length(_state.monitors); right++)
+        {
+            if(_state.monitors[right].x < _state.monitors[_best].x)
+                _best = right;
+        }
+        if(_best != left)
+        {
+            var _swap = _state.monitors[left];
+            _state.monitors[left] = _state.monitors[_best];
+            _state.monitors[_best] = _swap;
+        }
+    }
+
+    // Assign left-to-right sequential labels 1, 2, 3...
+    for(var m = 0; m < array_length(_state.monitors); m++)
+    {
+        _state.monitors[m].label = string(m + 1);
     }
 }
 
 function Monitor_GetActiveIndex(_state)
 {
     var _wx = window_get_x();
+    var _wy = window_get_y();
     var _count = array_length(_state.monitors);
     if(_count <= 0)
         return 0;
 
     var _best_idx = 0;
-    var _min_dist = 9999999;
+    var _min_dist = 999999999;
 
     for(var _m = 0; _m < _count; _m++)
     {
-        var _dist = abs(_wx - _state.monitors[_m].x);
+        var _mon = _state.monitors[_m];
+        var _dist_x = max(0, _mon.x - _wx, _wx - (_mon.x + _mon.w - 1));
+        var _dist_y = max(0, _mon.y - _wy, _wy - (_mon.y + _mon.h - 1));
+        var _dist = _dist_x + _dist_y;
+
         if(_dist < _min_dist)
         {
             _min_dist = _dist;
@@ -135,7 +249,7 @@ function Monitor_SwitchTo(_state, _target_index)
 
     window_set_fullscreen(false);
     window_set_showborder(false);
-    window_set_position(_mon.x, 0);
+    window_set_position(_mon.x, _mon.y);
     window_set_size(_mon.w, _mon.h);
 }
 
