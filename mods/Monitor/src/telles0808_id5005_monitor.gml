@@ -61,72 +61,11 @@ function Monitor_SplitPipes(_str)
     return _arr;
 }
 
-function Monitor_DetectMonitors()
-{
-    var _monitors = [];
-
-    // 1. Direct call to native GameMaker window_get_visible_rects()
-    try
-    {
-        var _rects = window_get_visible_rects();
-        if(is_array(_rects) && array_length(_rects) > 0)
-        {
-            if(is_array(_rects[0]))
-            {
-                for(var i = 0; i < array_length(_rects); i++)
-                {
-                    var _r = _rects[i];
-                    if(is_array(_r) && array_length(_r) >= 4)
-                    {
-                        array_push(_monitors, {
-                            x: real(_r[0]),
-                            y: real(_r[1]),
-                            w: real(_r[2]),
-                            h: real(_r[3])
-                        });
-                    }
-                }
-            }
-            else if(array_length(_rects) % 4 == 0)
-            {
-                for(var i = 0; i < array_length(_rects); i += 4)
-                {
-                    array_push(_monitors, {
-                        x: real(_rects[i]),
-                        y: real(_rects[i + 1]),
-                        w: real(_rects[i + 2]),
-                        h: real(_rects[i + 3])
-                    });
-                }
-            }
-        }
-    }
-    catch(_e_detect) {}
-
-    // 2. Fallback: probe current window / primary & secondary displays if detection returned empty
-    if(array_length(_monitors) <= 0)
-    {
-        var _dw = display_get_width();
-        var _dh = display_get_height();
-
-        if(_dw <= 0) _dw = 1920;
-        if(_dh <= 0) _dh = 1080;
-
-        // Primary display at (0,0)
-        array_push(_monitors, { x: 0, y: 0, w: _dw, h: _dh });
-
-        // Secondary left display at (-_dw, 0)
-        array_push(_monitors, { x: -_dw, y: 0, w: _dw, h: _dh });
-    }
-
-    return _monitors;
-}
-
 function Monitor_SetupDefaults(_state)
 {
     _state.monitors = [];
 
-    // Read custom monitor.cfg if provided by user
+    // Read custom / auto-generated monitor.cfg
     if(file_exists("monitor.cfg"))
     {
         var _file = file_text_open_read("monitor.cfg");
@@ -159,10 +98,21 @@ function Monitor_SetupDefaults(_state)
         }
     }
 
-    // Auto-detect connected monitors if monitor.cfg is not found or empty
+    // Fallback: if monitor.cfg is not found or empty, probe primary display
     if(array_length(_state.monitors) <= 0)
     {
-        _state.monitors = Monitor_DetectMonitors();
+        var _dw = display_get_width();
+        var _dh = display_get_height();
+        if(_dw <= 0) _dw = 1920;
+        if(_dh <= 0) _dh = 1080;
+
+        array_push(_state.monitors, {
+            label: "1",
+            x: 0,
+            y: 0,
+            w: _dw,
+            h: _dh
+        });
     }
 
     // Sort monitors by physical X coordinate ascending (left-to-right spatial order)
