@@ -65,58 +65,45 @@ function Monitor_DetectMonitors()
 {
     var _monitors = [];
 
-    // 1. Try native GameMaker window_get_visible_rects()
+    // 1. Direct call to native GameMaker window_get_visible_rects()
     try
     {
-        var _fn_rects = undefined;
-        if(variable_global_exists("window_get_visible_rects"))
-            _fn_rects = variable_global_get("window_get_visible_rects");
-        else
+        var _rects = window_get_visible_rects();
+        if(is_array(_rects) && array_length(_rects) > 0)
         {
-            var _asset_idx = asset_get_index("window_get_visible_rects");
-            if(_asset_idx >= 0) _fn_rects = _asset_idx;
-        }
-
-        if(!is_undefined(_fn_rects))
-        {
-            var _rects = is_callable(_fn_rects) ? (is_method(_fn_rects) ? method_call(_fn_rects, []) : script_execute(_fn_rects)) : undefined;
-
-            if(is_array(_rects) && array_length(_rects) > 0)
+            if(is_array(_rects[0]))
             {
-                if(is_array(_rects[0]))
+                for(var i = 0; i < array_length(_rects); i++)
                 {
-                    for(var i = 0; i < array_length(_rects); i++)
-                    {
-                        var _r = _rects[i];
-                        if(is_array(_r) && array_length(_r) >= 4)
-                        {
-                            array_push(_monitors, {
-                                x: real(_r[0]),
-                                y: real(_r[1]),
-                                w: real(_r[2]),
-                                h: real(_r[3])
-                            });
-                        }
-                    }
-                }
-                else if(array_length(_rects) % 4 == 0)
-                {
-                    for(var i = 0; i < array_length(_rects); i += 4)
+                    var _r = _rects[i];
+                    if(is_array(_r) && array_length(_r) >= 4)
                     {
                         array_push(_monitors, {
-                            x: real(_rects[i]),
-                            y: real(_rects[i + 1]),
-                            w: real(_rects[i + 2]),
-                            h: real(_rects[i + 3])
+                            x: real(_r[0]),
+                            y: real(_r[1]),
+                            w: real(_r[2]),
+                            h: real(_r[3])
                         });
                     }
+                }
+            }
+            else if(array_length(_rects) % 4 == 0)
+            {
+                for(var i = 0; i < array_length(_rects); i += 4)
+                {
+                    array_push(_monitors, {
+                        x: real(_rects[i]),
+                        y: real(_rects[i + 1]),
+                        w: real(_rects[i + 2]),
+                        h: real(_rects[i + 3])
+                    });
                 }
             }
         }
     }
     catch(_e_detect) {}
 
-    // 2. Fallback: probe current window / primary display if detection returned empty
+    // 2. Fallback: probe current window / primary & secondary displays if detection returned empty
     if(array_length(_monitors) <= 0)
     {
         var _dw = display_get_width();
@@ -128,18 +115,8 @@ function Monitor_DetectMonitors()
         // Primary display at (0,0)
         array_push(_monitors, { x: 0, y: 0, w: _dw, h: _dh });
 
-        // Probe window position if window is currently on a secondary screen
-        var _wx = window_get_x();
-        if(_wx < -200)
-        {
-            var _left_x = -_dw;
-            if(abs(_wx) > 1000) _left_x = round(_wx);
-            array_push(_monitors, { x: _left_x, y: 0, w: _dw, h: _dh });
-        }
-        else if(_wx > _dw - 200)
-        {
-            array_push(_monitors, { x: _dw, y: 0, w: _dw, h: _dh });
-        }
+        // Secondary left display at (-_dw, 0)
+        array_push(_monitors, { x: -_dw, y: 0, w: _dw, h: _dh });
     }
 
     return _monitors;
