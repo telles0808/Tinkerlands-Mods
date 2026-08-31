@@ -1285,13 +1285,15 @@ function GPS_DrawMapOverlay(_m)
 
     var _geom_tomb   = GPS_PaletteGeometry(6);
     var _spr_tomb    = sprTombStone;
+    var _tomb_x      = _geom_tomb.x + round(2 * _ratio);
+    var _tomb_y      = _geom_tomb.y + round(5 * _ratio);
     var _tover_tomb  = point_in_rectangle(_mx, _my,
                             _geom_tomb.x - _geom_tomb.size * 0.5, _geom_tomb.y - _geom_tomb.size * 0.5,
                             _geom_tomb.x + _geom_tomb.size * 0.5, _geom_tomb.y + _geom_tomb.size * 0.5);
     var _tscale_tomb = (_geom_tomb.size / max(sprite_get_width(_spr_tomb), sprite_get_height(_spr_tomb)))
                        * (_tover_tomb ? 1.2 : 1.0);
 
-    Draw.Sprite(_spr_tomb, 0, _geom_tomb.x, _geom_tomb.y, _tscale_tomb, _tscale_tomb, 0,
+    Draw.Sprite(_spr_tomb, 0, _tomb_x, _tomb_y, _tscale_tomb, _tscale_tomb, 0,
                 _m.auto_death_pin ? (_tover_tomb ? c_yellow : c_white) : c_gray,
                 _m.auto_death_pin ? 1.0 : 0.45);
 

@@ -1,7 +1,8 @@
-<# :
+﻿<# :
 @echo off
 setlocal
 set "SCRIPT_DIR=%~dp0"
+powershell.exe -NoProfile -Command "Unblock-File -Path '%~f0' -ErrorAction SilentlyContinue" >nul 2>&1
 title Build and Deploy - telles0808_id5005_monitor
 echo ========================================================
 echo   Compilando e Implantando: telles0808_id5005_monitor
