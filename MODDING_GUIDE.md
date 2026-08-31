@@ -223,39 +223,28 @@ Input.DisableMenuInputs(0.1);
 
 ## 5. 🗺️ Minimap & Mapping Architecture (TomTom)
 
-### Minimap Camera & Screen Boundary Synchronization
-The game world often extends beyond the visible gameplay screen (with inaccessible terrain, walls, and void space). When the player approaches a boundary, the game engine clamps the main gameplay camera (`view_camera[0]`).
+### Minimap Edge Clamping & Surface Bounds
+In the HUD, the native minimap viewport is clamped to the world's physical boundaries (`0` to `MAP_WIDTH` and `MAP_HEIGHT`). When the player approaches the outer edge of an island, the camera stops scrolling and the player moves out of the center toward the border.
 
-Because the HUD minimap represents the world relative to this exact camera viewport, calculating borders manually with static dimension formulas can cause drift if map boundaries or room margins differ.
+A naive relative calculation (`target - player`) assumes the player remains in the center, causing pins to drift on the minimap near borders.
 
-**True Engine Synchronized Minimap Camera:**
-Directly sample the center of the active engine view camera `view_camera[0]`:
-
-```gml
-function GetMinimapCameraCenter(_playerMapX, _playerMapY) {
-    var _tile = (TILE_SIZE > 0) ? TILE_SIZE : 16;
-    try {
-        var _cam = view_camera[0];
-        if (_cam != -1 && _cam >= 0) {
-            var _vx = camera_get_view_x(_cam);
-            var _vy = camera_get_view_y(_cam);
-            var _vw = camera_get_view_width(_cam);
-            var _vh = camera_get_view_height(_cam);
-
-            if (_vw > 0 && _vh > 0) {
-                return {
-                    x: (_vx + _vw * 0.5) / _tile,
-                    y: (_vy + _vh * 0.5) / _tile
-                };
-            }
-        }
-    } catch (_e) {}
-
-    return { x: _playerMapX, y: _playerMapY };
-}
-```
-
-This guarantees 100% pixel-perfect synchronization across all maps (overworld, dungeons, caves, and arenas), as the engine's built-in camera clamping and viewport logic are automatically applied.
+**Clean Clamped Camera Solution:**
+1. Extract dynamic world dimensions in tiles from `MINIMAP.surfaceWorld` via `surface_get_width` / `surface_get_height` (or global `MAP_WIDTH` / `MAP_HEIGHT`).
+2. Calculate the half-view radius in tiles:
+   ```gml
+   var _halfViewX = ((_miniRight - _miniLeft) * 0.5) / _miniScale;
+   var _halfViewY = ((_miniBottom - _miniTop) * 0.5) / _miniScale;
+   ```
+3. Clamp the virtual minimap camera:
+   ```gml
+   var _camX = (_mapW <= _halfViewX * 2) ? (_mapW * 0.5) : clamp(_playerMapX, _halfViewX, _mapW - _halfViewX);
+   var _camY = (_mapH <= _halfViewY * 2) ? (_mapH * 0.5) : clamp(_playerMapY, _halfViewY, _mapH - _halfViewY);
+   ```
+4. Project target coordinates using the clamped camera:
+   ```gml
+   var _targetMiniX = _miniCenterX + (_targetMapX - _camX) * _miniScale;
+   var _targetMiniY = _miniCenterY + (_targetMapY - _camY) * _miniScale;
+   ```
 
 ### Expedition Island Isolation (`WORLD` Struct)
 Procedural expedition islands on the ship's navigation matrix are saved under canonical file patterns: `RandomIsland<col>x<row>.sav` (e.g., `RandomIsland2x0`).
