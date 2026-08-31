@@ -31,10 +31,10 @@ Mods are packaged as standard ZIP archives renamed to `<ModName>.mod`:
 * **`info.json`**:
   ```json
   {
-      "name": "telles0808_id5004_tomtom",
+      "name": "telles0808_id5004_gps",
       "author": "Telles0808",
       "version": "1.0.0",
-      "description": "TomTom navigation mod for Tinkerlands"
+      "description": "GPS Radar navigation mod for Tinkerlands"
   }
   ```
 
@@ -42,7 +42,7 @@ Mods are packaged as standard ZIP archives renamed to `<ModName>.mod`:
   ```json
   {
       "id": 5004,
-      "key": "telles0808_id5004_tomtom",
+      "key": "telles0808_id5004_gps",
       "event": "E_CS_EVENT.None",
       "code": "<ENCODED_GML_CODE>"
   }
@@ -53,7 +53,7 @@ Each mod must be assigned a unique numeric identifier in its script JSON to prev
 * `Fog = 5001`
 * `RealClock = 5002`
 * `BO (Better Organizer) = 5003`
-* `TomTom = 5004`
+* `GPS Radar = 5004`
 * `Monitor = 5005`
 
 ### Cache & Hot-Reload Behavior

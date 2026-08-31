@@ -1,6 +1,6 @@
 ﻿/*
     ========================================================================
-    TINKERLANDS - TomTom
+    TINKERLANDS - GPS Radar
     Author: Telles0808
     ID: 5004
     ========================================================================
@@ -8,7 +8,7 @@
 
 OnIslandArrive(function()
 {
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
 
     if(_m != undefined)
     {
@@ -20,14 +20,14 @@ OnIslandArrive(function()
         _m.last_region = undefined;
         _m.map_open    = false;
         _m.drag_active = false;
-        TomTom_EnsureDefaults(_m);
-        TomTom_LoadPins(_m);
+        GPS_EnsureDefaults(_m);
+        GPS_LoadPins(_m);
     }
 });
 
 OnIslandFirstArrive(function()
 {
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
 
     if(_m != undefined)
     {
@@ -39,14 +39,14 @@ OnIslandFirstArrive(function()
         _m.last_region = undefined;
         _m.map_open    = false;
         _m.drag_active = false;
-        TomTom_EnsureDefaults(_m);
-        TomTom_LoadPins(_m);
+        GPS_EnsureDefaults(_m);
+        GPS_LoadPins(_m);
     }
 });
 
 OnMainIslandArrive(function()
 {
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
 
     if(_m != undefined)
     {
@@ -59,23 +59,23 @@ OnMainIslandArrive(function()
         _m.last_region = undefined;
         _m.map_open    = false;
         _m.drag_active = false;
-        TomTom_EnsureDefaults(_m);
-        TomTom_LoadPins(_m);
+        GPS_EnsureDefaults(_m);
+        GPS_LoadPins(_m);
     }
 });
 
 OnWorldGenerationEnd(function()
 {
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
 
     if(_m == undefined)
     {
         ModInstance.Create(
-            "TomTom",
-            "TomTom_Create",
-            "TomTom_Update",
+            "GPS",
+            "GPS_Create",
+            "GPS_Update",
             undefined,
-            "TomTom_Draw",
+            "GPS_Draw",
             undefined
         );
     }
@@ -88,38 +88,38 @@ OnWorldGenerationEnd(function()
         _m.last_region = undefined;
         _m.map_open    = false;
         _m.drag_active = false;
-        _m.cutscenePlaying      = TomTom_GetCallable("cutscene_is_playing");
-        _m.cutscenePlayingOther = TomTom_GetCallable("cutscene_is_playing_except_player");
-        TomTom_EnsureDefaults(_m);
-        TomTom_LoadPins(_m);
+        _m.cutscenePlaying      = GPS_GetCallable("cutscene_is_playing");
+        _m.cutscenePlayingOther = GPS_GetCallable("cutscene_is_playing_except_player");
+        GPS_EnsureDefaults(_m);
+        GPS_LoadPins(_m);
     }
 });
 
 OnNPCSpawn(function(_npc)
 {
-    TomTom_NPCAdd(_npc);
+    GPS_NPCAdd(_npc);
 });
 
 OnModDrawGUIEnd(function()
 {
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
 
     if(_m != undefined)
     {
-        if(_m.map_open && !TomTom_PauseMenuOpen())
+        if(_m.map_open && !GPS_PauseMenuOpen())
         {
-            TomTom_DrawMapOverlay(_m);
+            GPS_DrawMapOverlay(_m);
         }
-        else if(TomTom_HUDVisible() && !_m.radar_mode)
+        else if(GPS_HUDVisible() && !_m.radar_mode)
         {
-            TomTom_DrawMinimapRadar(_m);
+            GPS_DrawMinimapRadar(_m);
         }
 
-        TomTom_DrawPlayerCoords();
+        GPS_DrawPlayerCoords();
     }
 });
 
-function TomTom_SafeSprite(_name, _fallback)
+function GPS_SafeSprite(_name, _fallback)
 {
     if(variable_global_exists(_name))
     {
@@ -134,7 +134,7 @@ function TomTom_SafeSprite(_name, _fallback)
     return _fallback;
 }
 
-function TomTom_EnsureDefaults(_m)
+function GPS_EnsureDefaults(_m)
 {
     if(_m == undefined) return;
     if(!variable_instance_exists(_m, "radar_mode"))       _m.radar_mode       = true;
@@ -147,7 +147,7 @@ function TomTom_EnsureDefaults(_m)
     if(!variable_instance_exists(_m, "chests"))           _m.chests           = [];
 }
 
-function TomTom_Create()
+function GPS_Create()
 {
 
     radar_mode           = true;
@@ -165,8 +165,8 @@ function TomTom_Create()
     mob_tick             = 0;
     chest_tick           = 0;
     last_region          = undefined;
-    cutscenePlaying      = TomTom_GetCallable("cutscene_is_playing");
-    cutscenePlayingOther = TomTom_GetCallable("cutscene_is_playing_except_player");
+    cutscenePlaying      = GPS_GetCallable("cutscene_is_playing");
+    cutscenePlayingOther = GPS_GetCallable("cutscene_is_playing_except_player");
 
     map_open             = false;
     current_island       = "";
@@ -176,16 +176,16 @@ function TomTom_Create()
     drag_type            = -1;
     drag_pin_idx         = -1;
 
-    TomTom_LoadPins(id);
+    GPS_LoadPins(id);
 }
 
-function TomTom_ScaleRatio()
+function GPS_ScaleRatio()
 {
     var _h = display_get_gui_height();
     return (_h > 0) ? (_h / 1080.0) : 1.0;
 }
 
-function TomTom_GetCallable(_name)
+function GPS_GetCallable(_name)
 {
     if(!variable_global_exists(_name))
         return undefined;
@@ -194,7 +194,7 @@ function TomTom_GetCallable(_name)
     return is_callable(_callable) ? _callable : undefined;
 }
 
-function TomTom_Call(_callable)
+function GPS_Call(_callable)
 {
     if(is_method(_callable))
         return method_call(_callable, []);
@@ -202,7 +202,7 @@ function TomTom_Call(_callable)
     return script_execute(_callable);
 }
 
-function TomTom_ValidName(_v)
+function GPS_ValidName(_v)
 {
     return is_string(_v)
         && _v != ""
@@ -211,7 +211,7 @@ function TomTom_ValidName(_v)
         && _v != "<undefined>";
 }
 
-function TomTom_TutorialActive()
+function GPS_TutorialActive()
 {
     if(variable_global_exists("WORLD_FLAGS"))
     {
@@ -222,33 +222,33 @@ function TomTom_TutorialActive()
     return false;
 }
 
-function TomTom_WorldMapOpen()
+function GPS_WorldMapOpen()
 {
     return instance_exists(objGUIMapChartController)
         || instance_exists(objGUIShipNavigationController);
 }
 
-function TomTom_CutsceneActive()
+function GPS_CutsceneActive()
 {
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
     if(_m == undefined) return false;
 
-    if(is_callable(_m.cutscenePlaying)      && TomTom_Call(_m.cutscenePlaying))      return true;
-    if(is_callable(_m.cutscenePlayingOther) && TomTom_Call(_m.cutscenePlayingOther)) return true;
+    if(is_callable(_m.cutscenePlaying)      && GPS_Call(_m.cutscenePlaying))      return true;
+    if(is_callable(_m.cutscenePlayingOther) && GPS_Call(_m.cutscenePlayingOther)) return true;
     return false;
 }
 
-function TomTom_PauseMenuOpen()
+function GPS_PauseMenuOpen()
 {
     return instance_exists(objGUIMenuController);
 }
 
-function TomTom_HUDVisible()
+function GPS_HUDVisible()
 {
     if(!instance_exists(objGUIIngameController)) return false;
-    if(TomTom_TutorialActive())                  return false;
-    if(TomTom_WorldMapOpen())                    return false;
-    if(TomTom_CutsceneActive())                  return false;
+    if(GPS_TutorialActive())                  return false;
+    if(GPS_WorldMapOpen())                    return false;
+    if(GPS_CutsceneActive())                  return false;
 
     if(variable_global_exists("guiEnabled")      && !global.guiEnabled)      return false;
     if(variable_global_exists("guiStatsEnabled") && !global.guiStatsEnabled) return false;
@@ -274,7 +274,7 @@ function TomTom_HUDVisible()
     return true;
 }
 
-function TomTom_PinSprite(_type)
+function GPS_PinSprite(_type)
 {
     switch(_type)
     {
@@ -284,12 +284,12 @@ function TomTom_PinSprite(_type)
         case 3: return sprGUIIngameIconBoss;
         case 4: return sprGUIIngameIconTeleport;
         case 5: return sprTombStone;
-        case 6: return TomTom_SafeSprite("sprGUIIngameCodexIconCompleted", sprGUIIngameIconPOI);
+        case 6: return GPS_SafeSprite("sprGUIIngameCodexIconCompleted", sprGUIIngameIconPOI);
     }
     return sprGUIIngameIconPOI;
 }
 
-function TomTom_GetMinimap()
+function GPS_GetMinimap()
 {
     try
     {
@@ -311,9 +311,9 @@ function TomTom_GetMinimap()
     return { x: 0, y: 0, scale: 1.0 };
 }
 
-function TomTom_TrashGeometry()
+function GPS_TrashGeometry()
 {
-    var _ratio = TomTom_ScaleRatio();
+    var _ratio = GPS_ScaleRatio();
     return {
         x: 48 * _ratio,
         y: 48 * _ratio,
@@ -321,10 +321,10 @@ function TomTom_TrashGeometry()
     };
 }
 
-function TomTom_PaletteGeometry(_index)
+function GPS_PaletteGeometry(_index)
 {
-    var _ratio   = TomTom_ScaleRatio();
-    var _trash   = TomTom_TrashGeometry();
+    var _ratio   = GPS_ScaleRatio();
+    var _trash   = GPS_TrashGeometry();
     var _spacing = 48 * _ratio;
     var _start_x = _trash.x + 52 * _ratio;
 
@@ -335,11 +335,11 @@ function TomTom_PaletteGeometry(_index)
     };
 }
 
-function TomTom_InProtectedHeaderZone(_mx, _my)
+function GPS_InProtectedHeaderZone(_mx, _my)
 {
-    var _ratio = TomTom_ScaleRatio();
+    var _ratio = GPS_ScaleRatio();
     var _gw    = display_get_gui_width();
-    var _lp    = TomTom_PaletteGeometry(5);
+    var _lp    = GPS_PaletteGeometry(5);
 
     if(_mx <= _lp.x + 36 * _ratio && _my <= 96 * _ratio)
         return true;
@@ -350,7 +350,7 @@ function TomTom_InProtectedHeaderZone(_mx, _my)
     return false;
 }
 
-function TomTom_NPCAdd(_npc)
+function GPS_NPCAdd(_npc)
 {
     if(_npc == undefined || !instance_exists(_npc))
         return;
@@ -364,7 +364,7 @@ function TomTom_NPCAdd(_npc)
         }
     }
 
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
     if(_m == undefined) return;
 
     for(var i = 0; i < array_length(_m.npcs); i++)
@@ -372,7 +372,7 @@ function TomTom_NPCAdd(_npc)
         if(_m.npcs[i].inst == _npc) return;
     }
 
-    var _id = TomTom_NPCResolve(_npc);
+    var _id = GPS_NPCResolve(_npc);
     array_push(_m.npcs, {
         inst:   _npc,
         x:      _npc.x,
@@ -383,15 +383,15 @@ function TomTom_NPCAdd(_npc)
     });
 }
 
-function TomTom_NPCResolve(_npc)
+function GPS_NPCResolve(_npc)
 {
     return {
-        name:   TomTom_GetNPCName(_npc),
-        sprite: TomTom_GetPortrait(_npc)
+        name:   GPS_GetNPCName(_npc),
+        sprite: GPS_GetPortrait(_npc)
     };
 }
 
-function TomTom_GetNPCName(_npc)
+function GPS_GetNPCName(_npc)
 {
     var _candidates = ["npcName", "npc_name", "displayName", "display_name", "name", "entityName", "refNPC"];
     for(var c = 0; c < array_length(_candidates); c++)
@@ -399,7 +399,7 @@ function TomTom_GetNPCName(_npc)
         if(variable_instance_exists(_npc, _candidates[c]))
         {
             var _v = variable_instance_get(_npc, _candidates[c]);
-            if(TomTom_ValidName(_v)) return string(_v);
+            if(GPS_ValidName(_v)) return string(_v);
         }
     }
 
@@ -439,7 +439,7 @@ function TomTom_GetNPCName(_npc)
     return "NPC";
 }
 
-function TomTom_GetPortrait(_npc)
+function GPS_GetPortrait(_npc)
 {
     if(variable_instance_exists(_npc, "npcID"))
     {
@@ -492,11 +492,11 @@ function TomTom_GetPortrait(_npc)
     return sprNPCPortraitGuide;
 }
 
-function TomTom_GetMobName(_mob)
+function GPS_GetMobName(_mob)
 {
-    if(variable_instance_exists(_mob, "name") && TomTom_ValidName(_mob.name)) return string(_mob.name);
-    if(variable_instance_exists(_mob, "mobName") && TomTom_ValidName(_mob.mobName)) return string(_mob.mobName);
-    if(variable_instance_exists(_mob, "refMob") && TomTom_ValidName(_mob.refMob)) return string(_mob.refMob);
+    if(variable_instance_exists(_mob, "name") && GPS_ValidName(_mob.name)) return string(_mob.name);
+    if(variable_instance_exists(_mob, "mobName") && GPS_ValidName(_mob.mobName)) return string(_mob.mobName);
+    if(variable_instance_exists(_mob, "refMob") && GPS_ValidName(_mob.refMob)) return string(_mob.refMob);
 
     if(variable_instance_exists(_mob, "mobID"))
     {
@@ -553,34 +553,34 @@ function TomTom_GetMobName(_mob)
     return "Monster";
 }
 
-function TomTom_GetPlayerName(_player)
+function GPS_GetPlayerName(_player)
 {
     if(variable_instance_exists(_player, "playerName"))
     {
         var _n = variable_instance_get(_player, "playerName");
-        if(TomTom_ValidName(_n)) return string(_n);
+        if(GPS_ValidName(_n)) return string(_n);
     }
     if(variable_instance_exists(_player, "name"))
     {
         var _n2 = variable_instance_get(_player, "name");
-        if(TomTom_ValidName(_n2)) return string(_n2);
+        if(GPS_ValidName(_n2)) return string(_n2);
     }
     if(variable_instance_exists(_player, "username"))
     {
         var _n3 = variable_instance_get(_player, "username");
-        if(TomTom_ValidName(_n3)) return string(_n3);
+        if(GPS_ValidName(_n3)) return string(_n3);
     }
     return "Player";
 }
 
-function TomTom_Update()
+function GPS_Update()
 {
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
     if(_m == undefined) return;
 
     if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER)) return;
 
-    TomTom_EnsureDefaults(_m);
+    GPS_EnsureDefaults(_m);
 
     var _is_alive = true;
     if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0)
@@ -602,7 +602,7 @@ function TomTom_Update()
             region: _death_reg
         });
 
-        TomTom_SavePins(_m);
+        GPS_SavePins(_m);
     }
     else if(!_m.player_was_alive && _is_alive)
     {
@@ -616,7 +616,7 @@ function TomTom_Update()
         ? variable_instance_get(MY_PLAYER, "netRegion")
         : undefined;
 
-    var _active_island = TomTom_GetIslandKey();
+    var _active_island = GPS_GetIslandKey();
     if(_curr_reg != _m.last_region || _active_island != _m.current_island)
     {
         _m.last_region     = _curr_reg;
@@ -625,7 +625,7 @@ function TomTom_Update()
         _m.mobs            = [];
         _m.chests          = [];
         _m.scan            = true;
-        TomTom_LoadPins(_m);
+        GPS_LoadPins(_m);
     }
 
     _m.tick++;
@@ -646,7 +646,7 @@ function TomTom_Update()
                     var _ninst = instance_find(_casset, ni);
                     if(instance_exists(_ninst))
                     {
-                        TomTom_NPCAdd(_ninst);
+                        GPS_NPCAdd(_ninst);
                     }
                 }
             }
@@ -679,7 +679,7 @@ function TomTom_Update()
             if((_n.name == "" || _n.name == "NPC" || _n.sprite == -1) && _n.tries < 20)
             {
                 _n.tries++;
-                var _id = TomTom_NPCResolve(_n.inst);
+                var _id = GPS_NPCResolve(_n.inst);
                 if(_id.name   != "") _n.name   = _id.name;
                 if(_id.sprite != -1) _n.sprite = _id.sprite;
             }
@@ -696,7 +696,7 @@ function TomTom_Update()
 
             var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
             var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
-            var _def_gob   = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+            var _def_gob   = GPS_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
 
             var _mob_count = instance_number(objMob);
             for(var mi = 0; mi < _mob_count; mi++)
@@ -721,7 +721,7 @@ function TomTom_Update()
                 if(variable_instance_exists(_minst, "visible") && !_minst.visible)
                     continue;
 
-                var _mname = TomTom_GetMobName(_minst);
+                var _mname = GPS_GetMobName(_minst);
                 var _mspr  = (variable_instance_exists(_minst, "sprite_index") && sprite_exists(_minst.sprite_index))
                              ? _minst.sprite_index
                              : _def_gob;
@@ -783,12 +783,12 @@ function TomTom_Update()
         }
     }
 
-    if(TomTom_HUDVisible() && !_m.map_open)
+    if(GPS_HUDVisible() && !_m.map_open)
     {
-        TomTom_ButtonInput(_m);
+        GPS_ButtonInput(_m);
     }
 
-    if(TomTom_PauseMenuOpen())
+    if(GPS_PauseMenuOpen())
     {
         _m.map_open     = false;
         _m.drag_active  = false;
@@ -797,7 +797,7 @@ function TomTom_Update()
     }
 
     var _gw    = display_get_gui_width();
-    var _ratio = TomTom_ScaleRatio();
+    var _ratio = GPS_ScaleRatio();
     var _mx    = device_mouse_x_to_gui(0);
     var _my    = device_mouse_y_to_gui(0);
 
@@ -837,13 +837,13 @@ function TomTom_Update()
 
     if(_m.map_open)
     {
-        TomTom_MapInput(_m);
+        GPS_MapInput(_m);
     }
 }
 
-function TomTom_ButtonGeometry()
+function GPS_ButtonGeometry()
 {
-    var _ratio = TomTom_ScaleRatio();
+    var _ratio = GPS_ScaleRatio();
     var _gw    = display_get_gui_width();
     var _gh    = display_get_gui_height();
 
@@ -872,9 +872,9 @@ function TomTom_ButtonGeometry()
     };
 }
 
-function TomTom_BadgeGeometry(_index)
+function GPS_BadgeGeometry(_index)
 {
-    var _bg    = TomTom_ButtonGeometry();
+    var _bg    = GPS_ButtonGeometry();
     var _ratio = _bg.ratio;
 
     var _bsize = round(22 * _ratio);
@@ -895,15 +895,15 @@ function TomTom_BadgeGeometry(_index)
     };
 }
 
-function TomTom_ButtonInput(_m)
+function GPS_ButtonInput(_m)
 {
-    var _bg    = TomTom_ButtonGeometry();
+    var _bg    = GPS_ButtonGeometry();
     var _mx    = device_mouse_x_to_gui(0);
     var _my    = device_mouse_y_to_gui(0);
 
     for(var b = 0; b < 3; b++)
     {
-        var _badge = TomTom_BadgeGeometry(b);
+        var _badge = GPS_BadgeGeometry(b);
         var _bhalf = _badge.size * 0.65;
 
         if(point_in_rectangle(_mx, _my, _badge.cx - _bhalf, _badge.cy - _bhalf, _badge.cx + _bhalf, _badge.cy + _bhalf))
@@ -917,7 +917,7 @@ function TomTom_ButtonInput(_m)
                 else if(b == 1) _m.track_chests = !_m.track_chests;
                 else if(b == 2) _m.track_mobs   = !_m.track_mobs;
 
-                TomTom_SavePins(_m);
+                GPS_SavePins(_m);
                 mouse_clear(mb_left);
                 return;
             }
@@ -932,16 +932,16 @@ function TomTom_ButtonInput(_m)
         if(mouse_check_button_pressed(mb_left))
         {
             _m.radar_mode = !_m.radar_mode;
-            TomTom_SavePins(_m);
+            GPS_SavePins(_m);
             mouse_clear(mb_left);
             return;
         }
     }
 }
 
-function TomTom_DrawButton(_m)
+function GPS_DrawButton(_m)
 {
-    var _bg    = TomTom_ButtonGeometry();
+    var _bg    = GPS_ButtonGeometry();
     var _ratio = _bg.ratio;
     var _mx    = device_mouse_x_to_gui(0);
     var _my    = device_mouse_y_to_gui(0);    var _spr_sonar = sprItemAccesorySonar;
@@ -960,11 +960,11 @@ function TomTom_DrawButton(_m)
         _m.radar_mode ? 1.0 : 0.45
     );
 
-    var _gob_spr = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+    var _gob_spr = GPS_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
 
     for(var b = 0; b < 3; b++)
     {
-        var _badge    = TomTom_BadgeGeometry(b);
+        var _badge    = GPS_BadgeGeometry(b);
         var _bactive  = (b == 0) ? _m.track_npcs : ((b == 1) ? _m.track_chests : _m.track_mobs);
         var _bover    = point_in_rectangle(_mx, _my,
                             _badge.cx - _badge.size * 0.5, _badge.cy - _badge.size * 0.5,
@@ -997,11 +997,11 @@ function TomTom_DrawButton(_m)
     }
 }
 
-function TomTom_MapInput(_m)
+function GPS_MapInput(_m)
 {
     var _mx    = device_mouse_x_to_gui(0);
     var _my    = device_mouse_y_to_gui(0);
-    var _ratio = TomTom_ScaleRatio();
+    var _ratio = GPS_ScaleRatio();
 
     with(objGUIIngameController)
     {
@@ -1011,7 +1011,7 @@ function TomTom_MapInput(_m)
     var _palette_types = [0, 1, 2, 3, 4, 6];
     for(var i = 0; i < array_length(_palette_types); i++)
     {
-        var _geom = TomTom_PaletteGeometry(i);
+        var _geom = GPS_PaletteGeometry(i);
         var _half = _geom.size * 0.5;
 
         if(point_in_rectangle(_mx, _my, _geom.x - _half, _geom.y - _half, _geom.x + _half, _geom.y + _half))
@@ -1029,7 +1029,7 @@ function TomTom_MapInput(_m)
         }
     }
 
-    var _mini  = TomTom_GetMinimap();
+    var _mini  = GPS_GetMinimap();
     var _left  = _mini.x;
     var _top   = _mini.y;
     var _scale = _mini.scale;
@@ -1067,7 +1067,7 @@ function TomTom_MapInput(_m)
     {
         _m.drag_active = false;
 
-        var _trash = TomTom_TrashGeometry();
+        var _trash = GPS_TrashGeometry();
         var _thalf = _trash.size * 0.75;
 
         if(point_in_rectangle(_mx, _my, _trash.x - _thalf, _trash.y - _thalf, _trash.x + _thalf, _trash.y + _thalf))
@@ -1077,13 +1077,13 @@ function TomTom_MapInput(_m)
                 array_delete(_m.pins, _m.drag_pin_idx, 1);
                 if(_m.selected_pin == _m.drag_pin_idx)      _m.selected_pin = -1;
                 else if(_m.selected_pin > _m.drag_pin_idx)  _m.selected_pin--;
-                TomTom_SavePins(_m);
+                GPS_SavePins(_m);
             }
             _m.drag_pin_idx = -1;
             return;
         }
 
-        if(TomTom_InProtectedHeaderZone(_mx, _my))
+        if(GPS_InProtectedHeaderZone(_mx, _my))
         {
             _m.drag_pin_idx = -1;
             return;
@@ -1111,17 +1111,17 @@ function TomTom_MapInput(_m)
             _m.selected_pin = array_length(_m.pins) - 1;
         }
 
-        TomTom_SavePins(_m);
+        GPS_SavePins(_m);
         _m.drag_pin_idx = -1;
     }
 }
 
-function TomTom_DrawMapOverlay(_m)
+function GPS_DrawMapOverlay(_m)
 {
-    var _ratio = TomTom_ScaleRatio();
+    var _ratio = GPS_ScaleRatio();
     var _mx    = device_mouse_x_to_gui(0);
     var _my    = device_mouse_y_to_gui(0);
-    var _mini  = TomTom_GetMinimap();
+    var _mini  = GPS_GetMinimap();
     var _left  = _mini.x;
     var _top   = _mini.y;
     var _scale = _mini.scale;
@@ -1153,7 +1153,7 @@ function TomTom_DrawMapOverlay(_m)
     // 2. Mobs / Mini-bosses rastreados no Mapa Grande
     if(_m.track_mobs)
     {
-        var _def_gob = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+        var _def_gob = GPS_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
         for(var mb = 0; mb < array_length(_m.mobs); mb++)
         {
             var _mob = _m.mobs[mb];
@@ -1206,7 +1206,7 @@ function TomTom_DrawMapOverlay(_m)
 
         var _psx    = _left + _p.map_x * _scale;
         var _psy    = _top  + _p.map_y * _scale;
-        var _spr    = TomTom_PinSprite(_p.type);
+        var _spr    = GPS_PinSprite(_p.type);
         var _size   = 36 * _ratio;
         var _is_sel = (_m.selected_pin == i);
         var _iscale = _size / max(sprite_get_width(_spr), sprite_get_height(_spr));
@@ -1235,7 +1235,7 @@ function TomTom_DrawMapOverlay(_m)
         );
     }
 
-    var _trash     = TomTom_TrashGeometry();
+    var _trash     = GPS_TrashGeometry();
     var _spr_trash = sprGUIIngameIconQuickTrash;
     var _tover     = point_in_rectangle(_mx, _my,
                         _trash.x - _trash.size * 0.5, _trash.y - _trash.size * 0.5,
@@ -1250,8 +1250,8 @@ function TomTom_DrawMapOverlay(_m)
     for(var b = 0; b < array_length(_palette_types); b++)
     {
         var _ptype   = _palette_types[b];
-        var _geom    = TomTom_PaletteGeometry(b);
-        var _spr_pal = TomTom_PinSprite(_ptype);
+        var _geom    = GPS_PaletteGeometry(b);
+        var _spr_pal = GPS_PinSprite(_ptype);
         var _over    = point_in_rectangle(_mx, _my,
                             _geom.x - _geom.size * 0.5, _geom.y - _geom.size * 0.5,
                             _geom.x + _geom.size * 0.5, _geom.y + _geom.size * 0.5);
@@ -1265,13 +1265,13 @@ function TomTom_DrawMapOverlay(_m)
 
     if(_m.drag_active && _m.drag_type >= 0)
     {
-        var _drag_spr   = TomTom_PinSprite(_m.drag_type);
+        var _drag_spr   = GPS_PinSprite(_m.drag_type);
         var _drag_scale = 40 * _ratio / max(sprite_get_width(_drag_spr), sprite_get_height(_drag_spr));
         Draw.Sprite(_drag_spr, 0, _mx, _my, _drag_scale, _drag_scale, 0, c_yellow, 0.9);
     }
 }
 
-function TomTom_DrawPlayerCoords()
+function GPS_DrawPlayerCoords()
 {
     if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER))
         return;
@@ -1282,10 +1282,10 @@ function TomTom_DrawPlayerCoords()
     if(!instance_exists(objGUIIngameController))
         return;
 
-    if(TomTom_PauseMenuOpen())
+    if(GPS_PauseMenuOpen())
         return;
 
-    var _ratio = TomTom_ScaleRatio();
+    var _ratio = GPS_ScaleRatio();
     var _textScale = 3.0 * _ratio;
 
     var _tile = TILE_SIZE;
@@ -1309,7 +1309,7 @@ function TomTom_DrawPlayerCoords()
     );
 }
 
-function TomTom_DrawTarget(
+function GPS_DrawTarget(
     _x,
     _y,
     _name,
@@ -1426,7 +1426,7 @@ function TomTom_DrawTarget(
 }
 
 
-function TomTom_GetMinimapView(_ratio)
+function GPS_GetMinimapView(_ratio)
 {
     if(!is_struct(MINIMAP) || !variable_struct_exists(MINIMAP, "scale") || MINIMAP.scale <= 0)
         return undefined;
@@ -1533,7 +1533,7 @@ function TomTom_GetMinimapView(_ratio)
     };
 }
 
-function TomTom_DrawMinimapTarget(_view, _world_x, _world_y, _sprite, _color, _only_edge)
+function GPS_DrawMinimapTarget(_view, _world_x, _world_y, _sprite, _color, _only_edge)
 {
     if(_sprite < 0 || !sprite_exists(_sprite)) return;
 
@@ -1587,12 +1587,12 @@ function TomTom_DrawMinimapTarget(_view, _world_x, _world_y, _sprite, _color, _o
     Draw.Sprite(_sprite, 0, _x, _y, _scale, _scale, 0, _color, 1.0);
 }
 
-function TomTom_DrawMinimapRadar(_m)
+function GPS_DrawMinimapRadar(_m)
 {
     if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER)) return;
     if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0) return;
 
-    var _view = TomTom_GetMinimapView(TomTom_ScaleRatio());
+    var _view = GPS_GetMinimapView(GPS_ScaleRatio());
     if(is_undefined(_view)) return;
 
     var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
@@ -1611,7 +1611,7 @@ function TomTom_DrawMinimapRadar(_m)
                     continue;
             }
 
-            TomTom_DrawMinimapTarget(_view, _n.x, _n.y, _n.sprite != -1 ? _n.sprite : sprGUIIngameIconPOI, c_white, true);
+            GPS_DrawMinimapTarget(_view, _n.x, _n.y, _n.sprite != -1 ? _n.sprite : sprGUIIngameIconPOI, c_white, true);
         }
 
         var _count = instance_number(objPlayer);
@@ -1627,7 +1627,7 @@ function TomTom_DrawMinimapRadar(_m)
                     continue;
             }
 
-            TomTom_DrawMinimapTarget(_view, _player.x, _player.y, sprGUIIngameIconPOI, c_aqua, true);
+            GPS_DrawMinimapTarget(_view, _player.x, _player.y, sprGUIIngameIconPOI, c_aqua, true);
         }
     }
 
@@ -1643,7 +1643,7 @@ function TomTom_DrawMinimapRadar(_m)
             var _world_x = _pin.map_x * _view.tile;
             var _world_y = _pin.map_y * _view.tile;
 
-            TomTom_DrawMinimapTarget(_view, _world_x, _world_y, TomTom_PinSprite(_pin.type), c_yellow, false);
+            GPS_DrawMinimapTarget(_view, _world_x, _world_y, GPS_PinSprite(_pin.type), c_yellow, false);
         }
 
         for(var c = 0; c < array_length(_m.chests); c++)
@@ -1652,43 +1652,43 @@ function TomTom_DrawMinimapRadar(_m)
             if(!instance_exists(_chest.inst)) continue;
 
             var _cspr = (_chest.sprite != -1 && sprite_exists(_chest.sprite)) ? _chest.sprite : sprGUIIngameIconStorage;
-            TomTom_DrawMinimapTarget(_view, _chest.x, _chest.y, _cspr, c_yellow, false);
+            GPS_DrawMinimapTarget(_view, _chest.x, _chest.y, _cspr, c_yellow, false);
         }
     }
 
     if(_m.track_mobs)
     {
-        var _def_gob = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+        var _def_gob = GPS_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
         for(var i = 0; i < array_length(_m.mobs); i++)
         {
             var _mob = _m.mobs[i];
             if(!instance_exists(_mob.inst)) continue;
 
             var _mspr = (_mob.sprite != -1 && sprite_exists(_mob.sprite)) ? _mob.sprite : _def_gob;
-            TomTom_DrawMinimapTarget(_view, _mob.x, _mob.y, _mspr, c_white, false);
+            GPS_DrawMinimapTarget(_view, _mob.x, _mob.y, _mspr, c_white, false);
         }
     }
 }
 
-function TomTom_Draw()
+function GPS_Draw()
 {
-    var _m = ModInstance.Get("TomTom");
+    var _m = ModInstance.Get("GPS");
     if(_m == undefined) return;
 
-    if(_m.map_open || !TomTom_HUDVisible())
+    if(_m.map_open || !GPS_HUDVisible())
         return;
 
     if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER)) return;
     if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0) return;
 
-    TomTom_EnsureDefaults(_m);
+    GPS_EnsureDefaults(_m);
 
-    TomTom_DrawButton(_m);
+    GPS_DrawButton(_m);
 
     var _w      = WINDOW.width;
     var _h      = WINDOW.height;
     var _s      = GUI_SCALE;
-    var _ratio  = TomTom_ScaleRatio();
+    var _ratio  = GPS_ScaleRatio();
     var _px     = MY_PLAYER.x;
     var _py     = MY_PLAYER.y;
     var _cam_x  = CAMERA_X;
@@ -1719,7 +1719,7 @@ function TomTom_Draw()
                 if(variable_instance_exists(_n.inst, "visible") && !_n.inst.visible)
                     continue;
 
-                TomTom_DrawTarget(_n.x, _n.y, _n.name, _n.sprite, _w, _h, _s, _margin_inner, _px, _py, _cam_x, _cam_y, 0);
+                GPS_DrawTarget(_n.x, _n.y, _n.name, _n.sprite, _w, _h, _s, _margin_inner, _px, _py, _cam_x, _cam_y, 0);
             }
 
             var _count = instance_number(objPlayer);
@@ -1735,7 +1735,7 @@ function TomTom_Draw()
                         continue;
                 }
 
-                TomTom_DrawTarget(_player.x, _player.y, TomTom_GetPlayerName(_player), -1, _w, _h, _s, _margin_inner, _px, _py, _cam_x, _cam_y, 0);
+                GPS_DrawTarget(_player.x, _player.y, GPS_GetPlayerName(_player), -1, _w, _h, _s, _margin_inner, _px, _py, _cam_x, _cam_y, 0);
             }
         }
 
@@ -1754,7 +1754,7 @@ function TomTom_Draw()
                 var _world_x = _pin.map_x * _tile;
                 var _world_y = _pin.map_y * _tile;
 
-                TomTom_DrawTarget(_world_x, _world_y, "", TomTom_PinSprite(_pin.type), _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 1);
+                GPS_DrawTarget(_world_x, _world_y, "", GPS_PinSprite(_pin.type), _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 1);
             }
 
             for(var c = 0; c < array_length(_m.chests); c++)
@@ -1763,13 +1763,13 @@ function TomTom_Draw()
                 if(!instance_exists(_chest.inst)) continue;
 
                 var _cspr = (_chest.sprite != -1 && sprite_exists(_chest.sprite)) ? _chest.sprite : sprGUIIngameIconStorage;
-                TomTom_DrawTarget(_chest.x, _chest.y, "", _cspr, _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 2);
+                GPS_DrawTarget(_chest.x, _chest.y, "", _cspr, _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 2);
             }
         }
 
         if(_m.track_mobs)
         {
-            var _def_gob = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+            var _def_gob = GPS_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
 
             for(var i = 0; i < array_length(_m.mobs); i++)
             {
@@ -1777,13 +1777,13 @@ function TomTom_Draw()
                 if(!instance_exists(_mob.inst)) continue;
 
                 var _mspr = (_mob.sprite != -1 && sprite_exists(_mob.sprite)) ? _mob.sprite : _def_gob;
-                TomTom_DrawTarget(_mob.x, _mob.y, _mob.name, _mspr, _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 3);
+                GPS_DrawTarget(_mob.x, _mob.y, _mob.name, _mspr, _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 3);
             }
         }
     }
 }
 
-function TomTom_GetWorldStruct()
+function GPS_GetWorldStruct()
 {
 
     try
@@ -1806,10 +1806,10 @@ function TomTom_GetWorldStruct()
     return undefined;
 }
 
-function TomTom_GetIslandKey()
+function GPS_GetIslandKey()
 {
-    var _m = ModInstance.Get("TomTom");
-    var _world = TomTom_GetWorldStruct();
+    var _m = ModInstance.Get("GPS");
+    var _world = GPS_GetWorldStruct();
 
     if(is_struct(_world))
     {
@@ -1906,14 +1906,14 @@ function TomTom_GetIslandKey()
     return "island_main";
 }
 
-function TomTom_SavePins(_m)
+function GPS_SavePins(_m)
 {
     if(_m == undefined) return;
 
-    var _current_island = TomTom_GetIslandKey();
+    var _current_island = GPS_GetIslandKey();
     var _other_island_lines = [];
 
-    var _filename = "tomtom_pins.cfg";
+    var _filename = "gps_pins.cfg";
     if(file_exists(_filename))
     {
         var _rf = file_text_open_read(_filename);
@@ -1981,16 +1981,16 @@ function TomTom_SavePins(_m)
     file_text_close(_file);
 }
 
-function TomTom_LoadPins(_m)
+function GPS_LoadPins(_m)
 {
     if(_m == undefined) return;
     _m.pins = [];
 
-    TomTom_EnsureDefaults(_m);
+    GPS_EnsureDefaults(_m);
 
-    var _current_island = TomTom_GetIslandKey();
+    var _current_island = GPS_GetIslandKey();
 
-    var _filename = "tomtom_pins.cfg";
+    var _filename = "gps_pins.cfg";
     if(!file_exists(_filename)) return;
 
     var _file = file_text_open_read(_filename);

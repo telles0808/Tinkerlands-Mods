@@ -13,7 +13,7 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 | **[Fog](#-fog-id-5001)** | `5001` | Map surface translucency enhancer: renders explored fog of war with 95% opacity. | ✅ Stable | [⬇️ Download Fog.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5001_fog.mod) |
 | **[RealClock](#-realclock-id-5002)** | `5002` | Real-world 24-hour local computer time in the top-right corner without needing the Clock accessory. | ✅ Stable | [⬇️ Download RealClock.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5002_realclock.mod) |
 | **[Better Organizer](#-better-organizer-id-5003)** | `5003` | Chest automation & organization: 7-category filter bar with hotbar protection and persistent routing. | ✅ Stable | [⬇️ Download BO.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5003_bo.mod) |
-| **[TomTom](#-tomtom-id-5004)** | `5004` | Advanced GPS waypoint manager with interactive map pins, dual-layer radar, mob tracking, and automatic death tombstone pins. | ✅ Stable | [⬇️ Download TomTom.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5004_tomtom.mod) |
+| **[GPS Radar](#-gps-radar-id-5004)** | `5004` | Advanced GPS waypoint manager with interactive map pins, 2D raycast directional tracking, minimap scaling, and automatic death tombstone pins. | ✅ Stable | [⬇️ Download GPS_Radar.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5004_gps.mod) |
 | **[Monitor Switcher](#-monitor-switcher-id-5005)** | `5005` | 1-click multi-monitor display switcher on the title screen for Borderless Fullscreen mode. | ✅ Stable | [⬇️ Download Monitor.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5005_monitor.mod) |
 
 ---
@@ -69,20 +69,21 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 
 ---
 
-### 🧭 TomTom (ID: 5004)
-* **Dual-Layer Anti-Overlap Radar:** Separates monster/chest indicators (outer ring) from NPC indicators (inner ring) so directional cues never collide.
+### 🧭 GPS Radar (ID: 5004)
+* **Collinear 2D Raycast Radar:** Off-screen directional arrows and entity icons projected directly along the line of sight from the player to the target.
+* **Native Region Viewport Resolution:** Uses `Region.GetCurrent()` / `Region.GetWidth()` / `Region.GetHeight()` for perfect minimap boundary clamping across all room/island sizes.
 * **Automatic Death Tombstone:** Automatically places a persistent grave pin where you die, guiding you straight back to your lost items.
 * **Entity & Mob Tracking:** Detects nearby monsters, critters, and bosses with real creature portraits and distance in meters.
-* **Interactive Fullscreen Map:** Drag and drop 5 pin categories (waypoints, chests, points of interest, bosses, and death pins) with live coordinates and trash deletion.
+* **Interactive Fullscreen Map:** Drag and drop 6 pin categories (waypoints, chests, points of interest, bosses, teleports, and cleared locations) with live coordinates and trash deletion.
 * **Modular Sonar Controller:** HUD master button with 3 dedicated sub-toggles to filter NPCs, chests, or mobs on the fly.
 * **Clean In-Screen Aesthetics:** Hides portraits when NPCs enter your screen, displaying their name neatly beneath their feet.
 * **Screenshots & In-Game Showcase:**
 
-  | Dual-Layer Radar & Entity Tracking | Minimap Radar Mode | Fullscreen Map & Death Pin |
+  | 2D Raycast Tracking | Minimap Radar Mode | Fullscreen Map & Death Pin |
   | :---: | :---: | :---: |
-  | ![Dual-Layer Radar Tracking](mods/TomTom/screenshot_radar_tracking.png) | ![Minimap Radar Mode](mods/TomTom/screenshot_minimap_radar_mode.png) | ![Map Waypoints & Death Pin](mods/TomTom/screenshot_map_death_pin.png) |
+  | ![2D Raycast Tracking](mods/GPS_Radar/screenshot_radar_tracking.png) | ![Minimap Radar Mode](mods/GPS_Radar/screenshot_minimap_radar_mode.png) | ![Map Waypoints & Death Pin](mods/GPS_Radar/screenshot_map_death_pin.png) |
 
-* **Documentation & Source:** [mods/TomTom/README.md](mods/TomTom/README.md) • [mods/TomTom/src/telles0808_id5004_tomtom.gml](mods/TomTom/src/telles0808_id5004_tomtom.gml)
+* **Documentation & Source:** [mods/GPS_Radar/README.md](mods/GPS_Radar/README.md) • [mods/GPS_Radar/src/telles0808_id5004_gps.gml](mods/GPS_Radar/src/telles0808_id5004_gps.gml)
 
 ---
 

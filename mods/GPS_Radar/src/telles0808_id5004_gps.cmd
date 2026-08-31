@@ -2,9 +2,9 @@
 @echo off
 setlocal
 set "SCRIPT_DIR=%~dp0"
-title Build and Deploy - telles0808_id5004_tomtom
+title Build and Deploy - telles0808_id5004_gps
 echo ========================================================
-echo   Compilando e Implantando: telles0808_id5004_tomtom
+echo   Compilando e Implantando: telles0808_id5004_gps
 echo ========================================================
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$scriptDir = $env:SCRIPT_DIR.TrimEnd('\'); Invoke-Expression ([System.IO.File]::ReadAllText('%~f0'))"
@@ -17,21 +17,21 @@ if exist "%LOCALAPPDATA%\Tinkerlands\temp" (
 
 echo.
 echo ========================================================
-echo telles0808_id5004_tomtom compilado, implantado e cache limpo!
+echo telles0808_id5004_gps compilado, implantado e cache limpo!
 echo ========================================================
 echo.
 pause
 goto :EOF
 #>
 
-$ModName = 'TomTom'
+$ModName = 'GPS Radar'
 $ModId = 5004
-$ModKey = 'telles0808_id5004_tomtom'
-$ModFileName = 'telles0808_id5004_tomtom.mod'
-$gmlFileName = 'telles0808_id5004_tomtom.gml'
+$ModKey = 'telles0808_id5004_gps'
+$ModFileName = 'telles0808_id5004_gps.mod'
+$gmlFileName = 'telles0808_id5004_gps.gml'
 $rootDir = Split-Path -Parent $scriptDir
 $srcFile = Join-Path $scriptDir $gmlFileName
-$targetDir = Join-Path $rootDir '04 - TomTom'
+$targetDir = Join-Path $rootDir '04 - GPS_Radar'
 
 if (!(Test-Path $srcFile)) {
     Write-Error ("Arquivo fonte nao encontrado: " + $srcFile)
@@ -107,11 +107,13 @@ if (!$steamMods) {
 }
 
 if ($steamMods -and (Test-Path $steamMods)) {
-    # Remove old legacy .mod files for Radar and MapRadar
+    # Remove old legacy .mod files for Radar, MapRadar and TomTom
     Get-ChildItem -Path $steamMods -Filter "*radar*.mod"    | Where-Object { $_.Name -ne $ModFileName } | Remove-Item -Force -ErrorAction SilentlyContinue
     Get-ChildItem -Path $steamMods -Filter "*mapradar*.mod" | Where-Object { $_.Name -ne $ModFileName } | Remove-Item -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $steamMods -Filter "*tomtom*.mod"   | Where-Object { $_.Name -ne $ModFileName } | Remove-Item -Force -ErrorAction SilentlyContinue
     Get-ChildItem -Path $steamMods -Filter "Radar.mod"      | Remove-Item -Force -ErrorAction SilentlyContinue
     Get-ChildItem -Path $steamMods -Filter "MapRadar.mod"   | Remove-Item -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $steamMods -Filter "TomTom.mod"     | Remove-Item -Force -ErrorAction SilentlyContinue
 
     Copy-Item (Join-Path $targetDir $ModFileName) (Join-Path $steamMods $ModFileName) -Force
     Write-Host ("Implantado com sucesso em: " + (Join-Path $steamMods $ModFileName)) -ForegroundColor Green

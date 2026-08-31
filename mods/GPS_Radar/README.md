@@ -1,13 +1,13 @@
-# 🧭 TomTom — Unified GPS & Radar Navigation
+# 🧭 GPS Radar — Unified GPS & Radar Navigation
 
 [![Author](https://img.shields.io/badge/Author-Telles0808-blue.svg)](https://github.com/telles0808)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
 [![Game](https://img.shields.io/badge/Game-Tinkerlands-orange.svg)]()
 
-**TomTom** is the definitive, unified navigation and tracking system for **Tinkerlands**. It seamlessly unifies normal in-game HUD directional tracking (Radar), native minimap projection, and persistent waypoint management on the full expanded map.
+**GPS Radar** is the definitive, unified navigation and tracking system for **Tinkerlands**. It seamlessly unifies normal in-game HUD directional tracking (Radar), native minimap projection, and persistent waypoint management on the full expanded map.
 
-TomTom tracks **NPCs and multiplayer companions**, **world chests and user pins**, and **monsters, critters, and bosses**. Its controls remain accessible on the HUD with zero screen clutter.
+GPS Radar tracks **NPCs and multiplayer companions**, **world chests and user pins**, and **monsters, critters, and bosses**. Its controls remain accessible on the HUD with zero screen clutter.
 
 ---
 
@@ -22,7 +22,7 @@ TomTom tracks **NPCs and multiplayer companions**, **world chests and user pins*
 
 ## 🧭 One System, Dual Presentation Modes
 
-TomTom maintains a single, unified tracking state and category filter set. The main Sonar button instantly switches where tracking is displayed:
+GPS Radar maintains a single, unified tracking state and category filter set. The main Sonar button instantly switches where tracking is displayed:
 
 - **Normal HUD (Radar Mode):** Targets are projected on-screen or clamped along the monitor boundaries with directional arrows, accurate raycasting, distances in meters, and entity icons.
 - **Minimap Mode:** Targets are rendered directly inside the native minimap viewport, properly scaling and clamping to the map frame when out of view.
@@ -84,7 +84,7 @@ Opening the full map (<kbd>M</kbd>) displays the interactive pin palette and ove
 - **Pin Palette:** Drag and drop pins from the upper-left palette onto any map coordinate.
 - **Coordinate Readouts:** Each pin displays its exact tile coordinates (`X, Y`).
 - **Pin Movement & Deletion:** Drag existing pins to reposition, or drag them into the trash icon to delete.
-- **Persistent Storage:** Saves pins per island key and network region in `tomtom_pins.cfg`.
+- **Persistent Storage:** Saves pins per island key and network region in `gps_pins.cfg`.
 
 ### Placeable Pins
 
@@ -137,13 +137,13 @@ When the player dies, a tombstone pin (`sprTombStone`) is automatically recorded
 
 ## 💾 Persistence
 
-TomTom persists its entire configuration (Sonar mode, active filters, and custom pins per island/region) in `tomtom_pins.cfg`.
+GPS Radar persists its entire configuration (Sonar mode, active filters, and custom pins per island/region) in `gps_pins.cfg`.
 
 ---
 
 ## 📥 Installation
 
-1. Download `telles0808_id5004_tomtom.mod` from releases.
+1. Download `telles0808_id5004_gps.mod` from releases.
 2. Place the `.mod` file in your Tinkerlands `mods/` directory.
 3. Remove any obsolete radar or older map mod files.
 4. Launch Tinkerlands.
