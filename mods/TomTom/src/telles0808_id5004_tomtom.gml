@@ -1435,34 +1435,51 @@ function TomTom_DrawTarget(
 
 function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX, _halfViewTilesY)
 {
-    var _tile = (TILE_SIZE > 0) ? TILE_SIZE : 16;
+    var _mapW = 0;
+    var _mapH = 0;
 
-    // 1. Usa o centro da câmera real da engine (já com clamp físico, zoom e restrições de sala)
-    try
+    if(is_struct(MINIMAP))
     {
-        var _cam = view_camera[0];
-        if(_cam != -1 && _cam >= 0)
+        if(variable_struct_exists(MINIMAP, "surfaceWorld") && surface_exists(MINIMAP.surfaceWorld))
         {
-            var _vx = camera_get_view_x(_cam);
-            var _vy = camera_get_view_y(_cam);
-            var _vw = camera_get_view_width(_cam);
-            var _vh = camera_get_view_height(_cam);
-
-            if(_vw > 0 && _vh > 0)
-            {
-                var _worldCamX = (_vx + _vw * 0.5) / _tile;
-                var _worldCamY = (_vy + _vh * 0.5) / _tile;
-
-                return {
-                    x: _worldCamX,
-                    y: _worldCamY
-                };
-            }
+            _mapW = surface_get_width(MINIMAP.surfaceWorld);
+            _mapH = surface_get_height(MINIMAP.surfaceWorld);
+        }
+        else if(variable_struct_exists(MINIMAP, "surface") && surface_exists(MINIMAP.surface))
+        {
+            _mapW = surface_get_width(MINIMAP.surface);
+            _mapH = surface_get_height(MINIMAP.surface);
         }
     }
-    catch(_e_cam) {}
 
-    // 2. Fallback baseado na posição do jogador
+    if(_mapW <= 0 || _mapH <= 0)
+    {
+        if(variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
+            _mapW = variable_global_get("MAP_WIDTH");
+        if(variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
+            _mapH = variable_global_get("MAP_HEIGHT");
+    }
+
+    if(_mapW > 0 && _mapH > 0)
+    {
+        var _camX;
+        if(_mapW <= _halfViewTilesX * 2)
+            _camX = _mapW * 0.5;
+        else
+            _camX = clamp(_playerMapX, _halfViewTilesX, _mapW - _halfViewTilesX);
+
+        var _camY;
+        if(_mapH <= _halfViewTilesY * 2)
+            _camY = _mapH * 0.5;
+        else
+            _camY = clamp(_playerMapY, _halfViewTilesY, _mapH - _halfViewTilesY);
+
+        return {
+            x: _camX,
+            y: _camY
+        };
+    }
+
     return {
         x: _playerMapX,
         y: _playerMapY
