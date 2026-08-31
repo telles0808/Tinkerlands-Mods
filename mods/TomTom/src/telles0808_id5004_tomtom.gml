@@ -1,14 +1,10 @@
-/*
+﻿/*
     ========================================================================
     TINKERLANDS - TomTom
     Author: Telles0808
     ID: 5004
     ========================================================================
 */
-
-// ---------------------------------------------------------------------------
-// LIFECYCLE
-// ---------------------------------------------------------------------------
 
 OnIslandArrive(function()
 {
@@ -116,17 +112,12 @@ OnModDrawGUIEnd(function()
         }
         else if(TomTom_HUDVisible() && !_m.radar_mode)
         {
-            // No Modo Minimapa (Cinza), desenha os alvos no topo do Minimapa
             TomTom_DrawMinimapRadar(_m);
         }
 
         TomTom_DrawPlayerCoords();
     }
 });
-
-// ---------------------------------------------------------------------------
-// CREATE & DEFAULTS
-// ---------------------------------------------------------------------------
 
 function TomTom_SafeSprite(_name, _fallback)
 {
@@ -158,13 +149,13 @@ function TomTom_EnsureDefaults(_m)
 
 function TomTom_Create()
 {
-    // Sonar & Radar States
-    radar_mode           = true;  // true = Screen Edge TomTom (Colorido), false = Minimap GPS (Cinza)
-    track_npcs           = true;  // 👤 NPCs / Players
-    track_chests         = true;  // 📦 Baús & Pins de Mapa
-    track_mobs           = true;  // 👹 Mobs / Monstros / Bosses (Goblin)
 
-    player_was_alive     = true;  // Monitora morte para gerar pin automático de lápide/caixão
+    radar_mode           = true;
+    track_npcs           = true;
+    track_chests         = true;
+    track_mobs           = true;
+
+    player_was_alive     = true;
 
     npcs                 = [];
     mobs                 = [];
@@ -177,7 +168,6 @@ function TomTom_Create()
     cutscenePlaying      = TomTom_GetCallable("cutscene_is_playing");
     cutscenePlayingOther = TomTom_GetCallable("cutscene_is_playing_except_player");
 
-    // Map & Pins
     map_open             = false;
     current_island       = "";
     pins                 = [];
@@ -188,10 +178,6 @@ function TomTom_Create()
 
     TomTom_LoadPins(id);
 }
-
-// ---------------------------------------------------------------------------
-// HELPERS & VISIBILITY
-// ---------------------------------------------------------------------------
 
 function TomTom_ScaleRatio()
 {
@@ -288,28 +274,20 @@ function TomTom_HUDVisible()
     return true;
 }
 
-// ---------------------------------------------------------------------------
-// PIN SPRITES (0=POI, 1=Storage, 2=Question, 3=Boss, 4=Death/Lápide)
-// ---------------------------------------------------------------------------
-
 function TomTom_PinSprite(_type)
 {
     switch(_type)
     {
-        case 0: return sprGUIIngameIconPOI;           // 📍 Waypoint
-        case 1: return sprGUIIngameIconStorage;       // 📦 Storage
-        case 2: return sprGUIIngameIconQuestionMark;  // ❓ Question Mark
-        case 3: return sprGUIIngameIconBoss;          // 💀 Boss
-        case 4: return sprGUIIngameIconTeleport;      // 🌀 Portal Azul (Teleporte)
-        case 5: return sprTombStone;                  // 🪦 Lápide (Death Pin)
-        case 6: return TomTom_SafeSprite("sprGUIIngameCodexIconCompleted", sprGUIIngameIconPOI); // ✅ V de Certo Verde (Explorado / Visitado)
+        case 0: return sprGUIIngameIconPOI;
+        case 1: return sprGUIIngameIconStorage;
+        case 2: return sprGUIIngameIconQuestionMark;
+        case 3: return sprGUIIngameIconBoss;
+        case 4: return sprGUIIngameIconTeleport;
+        case 5: return sprTombStone;
+        case 6: return TomTom_SafeSprite("sprGUIIngameCodexIconCompleted", sprGUIIngameIconPOI);
     }
     return sprGUIIngameIconPOI;
 }
-
-// ---------------------------------------------------------------------------
-// MAP PANEL GEOMETRY
-// ---------------------------------------------------------------------------
 
 function TomTom_GetMinimap()
 {
@@ -361,7 +339,7 @@ function TomTom_InProtectedHeaderZone(_mx, _my)
 {
     var _ratio = TomTom_ScaleRatio();
     var _gw    = display_get_gui_width();
-    var _lp    = TomTom_PaletteGeometry(5); // 6 pins: index 0, 1, 2, 3, 4, 5
+    var _lp    = TomTom_PaletteGeometry(5);
 
     if(_mx <= _lp.x + 36 * _ratio && _my <= 96 * _ratio)
         return true;
@@ -371,10 +349,6 @@ function TomTom_InProtectedHeaderZone(_mx, _my)
 
     return false;
 }
-
-// ---------------------------------------------------------------------------
-// NPC & MOB RESOLUTION
-// ---------------------------------------------------------------------------
 
 function TomTom_NPCAdd(_npc)
 {
@@ -599,10 +573,6 @@ function TomTom_GetPlayerName(_player)
     return "Player";
 }
 
-// ---------------------------------------------------------------------------
-// UPDATE
-// ---------------------------------------------------------------------------
-
 function TomTom_Update()
 {
     var _m = ModInstance.Get("TomTom");
@@ -612,7 +582,6 @@ function TomTom_Update()
 
     TomTom_EnsureDefaults(_m);
 
-    // 0. Detecção de Morte do Jogador (Gera Pin de Morte automático no local)
     var _is_alive = true;
     if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0)
         _is_alive = false;
@@ -625,7 +594,6 @@ function TomTom_Update()
         var _death_map_x = MY_PLAYER.x / _tile;
         var _death_map_y = MY_PLAYER.y / _tile;
 
-        // Auto-cria o Pin de Morte (Tipo 5 = Lápide / Caixão) no ponto exato da morte
         var _death_reg = (variable_instance_exists(MY_PLAYER, "netRegion") && !is_undefined(MY_PLAYER.netRegion)) ? MY_PLAYER.netRegion : 0;
         array_push(_m.pins, {
             map_x:  _death_map_x,
@@ -638,13 +606,12 @@ function TomTom_Update()
     }
     else if(!_m.player_was_alive && _is_alive)
     {
-        // Jogador renasceu / respawnou
+
         _m.player_was_alive = true;
     }
 
     if(!_is_alive) return;
 
-    // 1. NPC Scanning / Cleanup
     var _curr_reg = variable_instance_exists(MY_PLAYER, "netRegion")
         ? variable_instance_get(MY_PLAYER, "netRegion")
         : undefined;
@@ -667,7 +634,6 @@ function TomTom_Update()
         _m.tick = 0;
         _m.scan = false;
 
-        // Escaneia todas as instâncias ativas de NPCs no mundo
         var _npc_classes = ["objNPC", "objInteractableNPC", "objNPCMerchant", "objWanderingMerchant"];
         for(var nc = 0; nc < array_length(_npc_classes); nc++)
         {
@@ -720,7 +686,6 @@ function TomTom_Update()
         }
     }
 
-    // 2. Mob & Animal Scanning
     if(_m.track_mobs)
     {
         _m.mob_tick++;
@@ -740,7 +705,6 @@ function TomTom_Update()
                 if(!instance_exists(_minst)) continue;
                 if(_minst == MY_PLAYER) continue;
 
-                // Não duplica NPCs que herdam de objMob
                 if(variable_instance_exists(_minst, "npcID") && is_numeric(_minst.npcID) && _minst.npcID >= 0)
                     continue;
                 if(variable_instance_exists(_minst, "refNPC"))
@@ -773,7 +737,6 @@ function TomTom_Update()
         }
     }
 
-    // 3. Chest / Baú Scanning no Mundo
     if(_m.track_chests)
     {
         _m.chest_tick++;
@@ -820,13 +783,11 @@ function TomTom_Update()
         }
     }
 
-    // 4. Radar HUD Button & Mini Badges Input (apenas quando HUD visível e mapa fechado)
     if(TomTom_HUDVisible() && !_m.map_open)
     {
         TomTom_ButtonInput(_m);
     }
 
-    // 5. Map toggle logic
     if(TomTom_PauseMenuOpen())
     {
         _m.map_open     = false;
@@ -848,7 +809,6 @@ function TomTom_Update()
     if(variable_global_exists("K_MAP_PRESSED") && global.K_MAP_PRESSED)
         _map_pressed = true;
 
-    // Click no botão de mapa do HUD
     if(!_m.map_open && mouse_check_button_pressed(mb_left))
     {
         if(_mx >= _gw - 65 * _ratio && _mx <= _gw - 5 * _ratio
@@ -868,7 +828,6 @@ function TomTom_Update()
         }
     }
 
-    // ESC fecha o mapa
     if(keyboard_check_pressed(vk_escape) && _m.map_open)
     {
         _m.map_open     = false;
@@ -876,17 +835,11 @@ function TomTom_Update()
         _m.drag_pin_idx = -1;
     }
 
-    // 6. Interações no painel do mapa
     if(_m.map_open)
     {
         TomTom_MapInput(_m);
     }
 }
-
-// ---------------------------------------------------------------------------
-// RADAR HUD BUTTON & 3 SUB-BADGES GEOMETRY
-// (Sonar Button 51px V e H)
-// ---------------------------------------------------------------------------
 
 function TomTom_ButtonGeometry()
 {
@@ -899,11 +852,9 @@ function TomTom_ButtonGeometry()
     var _frameLeft        = _gw - _frameW - _frameRightMargin;
     var _frameTop         = max(7, _gh * 0.015);
 
-    // Posicionado exatamente à esquerda do topo do minimapa (X: 1513, Y: 18 em 1920x1080)
     var _base_x = _frameLeft - round(86 * _ratio);
     var _base_y = _frameTop + round(2 * _ratio);
 
-    // Sonar Button ampliado para 56px (+5px V e H)
     var _sonar_size = round(56 * _ratio);
     var _sonar_x    = _base_x;
     var _sonar_y    = _base_y + round(5 * _ratio);
@@ -926,16 +877,15 @@ function TomTom_BadgeGeometry(_index)
     var _bg    = TomTom_ButtonGeometry();
     var _ratio = _bg.ratio;
 
-    // Mini-ícones (22px de tamanho)
     var _bsize = round(22 * _ratio);
     var _bx    = _bg.base_x + round(64 * _ratio);
 
     var _by    = _bg.base_y + round(8 * _ratio);
     switch(_index)
     {
-        case 0: _by = _bg.base_y + round(8 * _ratio);   break; // Topo: 👤 NPCs (Guia)
-        case 1: _by = _bg.base_y + round(33 * _ratio);  break; // Centro: 📦 Baús (Storage)
-        case 2: _by = _bg.base_y + round(58 * _ratio);  break; // Base: 👹 Mobs (Goblin)
+        case 0: _by = _bg.base_y + round(8 * _ratio);   break;
+        case 1: _by = _bg.base_y + round(33 * _ratio);  break;
+        case 2: _by = _bg.base_y + round(58 * _ratio);  break;
     }
 
     return {
@@ -951,7 +901,6 @@ function TomTom_ButtonInput(_m)
     var _mx    = device_mouse_x_to_gui(0);
     var _my    = device_mouse_y_to_gui(0);
 
-    // 1. Clique nos 3 Mini-Badges (Sub-Toggles à direita)
     for(var b = 0; b < 3; b++)
     {
         var _badge = TomTom_BadgeGeometry(b);
@@ -975,7 +924,6 @@ function TomTom_ButtonInput(_m)
         }
     }
 
-    // 2. Clique no Botão Principal do Sonar / Radar (à esquerda)
     if(point_in_rectangle(_mx, _my, _bg.radar_x, _bg.radar_y, _bg.radar_x + _bg.radar_w, _bg.radar_y + _bg.radar_h))
     {
         with(objGUIIngameController) { craftMo = true; }
@@ -996,10 +944,7 @@ function TomTom_DrawButton(_m)
     var _bg    = TomTom_ButtonGeometry();
     var _ratio = _bg.ratio;
     var _mx    = device_mouse_x_to_gui(0);
-    var _my    = device_mouse_y_to_gui(0);
-
-    // 1. Desenho do Botão Principal (Sonar)
-    var _spr_sonar = sprItemAccesorySonar;
+    var _my    = device_mouse_y_to_gui(0);    var _spr_sonar = sprItemAccesorySonar;
     var _sover     = point_in_rectangle(_mx, _my, _bg.radar_x, _bg.radar_y, _bg.radar_x + _bg.radar_w, _bg.radar_y + _bg.radar_h);
     var _sscale    = (_bg.radar_w / max(sprite_get_width(_spr_sonar), sprite_get_height(_spr_sonar)))
                      * (_sover ? 1.15 : 1.0);
@@ -1015,7 +960,6 @@ function TomTom_DrawButton(_m)
         _m.radar_mode ? 1.0 : 0.45
     );
 
-    // 2. Desenho dos 3 Mini-Badges (👤 Guia, 📦 Baú, 👹 Goblin)
     var _gob_spr = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
 
     for(var b = 0; b < 3; b++)
@@ -1038,7 +982,6 @@ function TomTom_DrawButton(_m)
         var _box    = (sprite_get_xoffset(_spr_badge) - sprite_get_width(_spr_badge) * 0.5) * _bscale;
         var _boy    = (sprite_get_yoffset(_spr_badge) - sprite_get_height(_spr_badge) * 0.5) * _bscale;
 
-        // Moldura escura pixel-art atrás de cada mini-ícone
         draw_set_color(c_black);
         draw_rectangle(_badge.cx - _badge.size * 0.5 - 1, _badge.cy - _badge.size * 0.5 - 1,
                        _badge.cx + _badge.size * 0.5 + 1, _badge.cy + _badge.size * 0.5 + 1, false);
@@ -1054,10 +997,6 @@ function TomTom_DrawButton(_m)
     }
 }
 
-// ---------------------------------------------------------------------------
-// MAP PIN INPUT & DRAG
-// ---------------------------------------------------------------------------
-
 function TomTom_MapInput(_m)
 {
     var _mx    = device_mouse_x_to_gui(0);
@@ -1069,7 +1008,6 @@ function TomTom_MapInput(_m)
         craftMo = true;
     }
 
-    // 1. Clicar em ícone da paleta para iniciar arrasto
     var _palette_types = [0, 1, 2, 3, 4, 6];
     for(var i = 0; i < array_length(_palette_types); i++)
     {
@@ -1091,7 +1029,6 @@ function TomTom_MapInput(_m)
         }
     }
 
-    // 2. Clicar em marcador existente no mapa (seleção / arrastar)
     var _mini  = TomTom_GetMinimap();
     var _left  = _mini.x;
     var _top   = _mini.y;
@@ -1126,7 +1063,6 @@ function TomTom_MapInput(_m)
         }
     }
 
-    // 3. Soltar arrasto -> criar/mover no mapa ou excluir na lixeira
     if(_m.drag_active && mouse_check_button_released(mb_left))
     {
         _m.drag_active = false;
@@ -1134,7 +1070,6 @@ function TomTom_MapInput(_m)
         var _trash = TomTom_TrashGeometry();
         var _thalf = _trash.size * 0.75;
 
-        // Soltou na lixeira -> exclui
         if(point_in_rectangle(_mx, _my, _trash.x - _thalf, _trash.y - _thalf, _trash.x + _thalf, _trash.y + _thalf))
         {
             if(_m.drag_pin_idx >= 0 && _m.drag_pin_idx < array_length(_m.pins))
@@ -1148,14 +1083,12 @@ function TomTom_MapInput(_m)
             return;
         }
 
-        // Soltou na área protegida da barra superior -> cancela
         if(TomTom_InProtectedHeaderZone(_mx, _my))
         {
             _m.drag_pin_idx = -1;
             return;
         }
 
-        // Coordenadas exatas do terreno do mapa
         var _map_x = (_mx - _left) / _scale;
         var _map_y = (_my - _top)  / _scale;
         var _cur_reg = (variable_instance_exists(MY_PLAYER, "netRegion") && !is_undefined(MY_PLAYER.netRegion)) ? MY_PLAYER.netRegion : 0;
@@ -1183,10 +1116,6 @@ function TomTom_MapInput(_m)
     }
 }
 
-// ---------------------------------------------------------------------------
-// DRAW MAP OVERLAY (quando o mapa grande está aberto)
-// ---------------------------------------------------------------------------
-
 function TomTom_DrawMapOverlay(_m)
 {
     var _ratio = TomTom_ScaleRatio();
@@ -1196,10 +1125,75 @@ function TomTom_DrawMapOverlay(_m)
     var _left  = _mini.x;
     var _top   = _mini.y;
     var _scale = _mini.scale;
+    var _tile  = TILE_SIZE > 0 ? TILE_SIZE : 16;
     var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
     var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : 0;
 
-    // 1. Marcadores no canvas do mapa
+    // 1. BaÃºs rastreados no Mapa Grande
+    if(_m.track_chests)
+    {
+        for(var c = 0; c < array_length(_m.chests); c++)
+        {
+            var _chest = _m.chests[c];
+            if(!instance_exists(_chest.inst)) continue;
+
+            var _csx = _left + (_chest.x / _tile) * _scale;
+            var _csy = _top  + (_chest.y / _tile) * _scale;
+            var _cspr = (_chest.sprite != -1 && sprite_exists(_chest.sprite)) ? _chest.sprite : sprGUIIngameIconStorage;
+            var _csize = 28 * _ratio;
+            var _cscale = _csize / max(sprite_get_width(_cspr), sprite_get_height(_cspr));
+            var _csox = (sprite_get_xoffset(_cspr) - sprite_get_width(_cspr) * 0.5) * _cscale;
+            var _csoy = (sprite_get_yoffset(_cspr) - sprite_get_height(_cspr) * 0.5) * _cscale;
+
+            Draw.Sprite(_cspr, 0, _csx + _csox, _csy + _csoy, _cscale * 1.15, _cscale * 1.15, 0, c_black, 0.7);
+            Draw.Sprite(_cspr, 0, _csx + _csox, _csy + _csoy, _cscale,        _cscale,        0, c_yellow, 1.0);
+        }
+    }
+
+    // 2. Mobs / Mini-bosses rastreados no Mapa Grande
+    if(_m.track_mobs)
+    {
+        var _def_gob = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
+        for(var mb = 0; mb < array_length(_m.mobs); mb++)
+        {
+            var _mob = _m.mobs[mb];
+            if(!instance_exists(_mob.inst)) continue;
+
+            var _msx = _left + (_mob.x / _tile) * _scale;
+            var _msy = _top  + (_mob.y / _tile) * _scale;
+            var _mspr = (_mob.sprite != -1 && sprite_exists(_mob.sprite)) ? _mob.sprite : _def_gob;
+            var _msize = 28 * _ratio;
+            var _mscale = _msize / max(sprite_get_width(_mspr), sprite_get_height(_mspr));
+            var _msox = (sprite_get_xoffset(_mspr) - sprite_get_width(_mspr) * 0.5) * _mscale;
+            var _msoy = (sprite_get_yoffset(_mspr) - sprite_get_height(_mspr) * 0.5) * _mscale;
+
+            Draw.Sprite(_mspr, 0, _msx + _msox, _msy + _msoy, _mscale * 1.15, _mscale * 1.15, 0, c_black, 0.7);
+            Draw.Sprite(_mspr, 0, _msx + _msox, _msy + _msoy, _mscale,        _mscale,        0, c_white,  1.0);
+        }
+    }
+
+    // 3. NPCs e outros Players rastreados no Mapa Grande
+    if(_m.track_npcs)
+    {
+        for(var n = 0; n < array_length(_m.npcs); n++)
+        {
+            var _npc = _m.npcs[n];
+            if(!instance_exists(_npc.inst)) continue;
+
+            var _nsx = _left + (_npc.x / _tile) * _scale;
+            var _nsy = _top  + (_npc.y / _tile) * _scale;
+            var _nspr = (_npc.sprite != -1 && sprite_exists(_npc.sprite)) ? _npc.sprite : sprGUIIngameIconPOI;
+            var _nsize = 28 * _ratio;
+            var _nscale = _nsize / max(sprite_get_width(_nspr), sprite_get_height(_nspr));
+            var _nsox = (sprite_get_xoffset(_nspr) - sprite_get_width(_nspr) * 0.5) * _nscale;
+            var _nsoy = (sprite_get_yoffset(_nspr) - sprite_get_height(_nspr) * 0.5) * _nscale;
+
+            Draw.Sprite(_nspr, 0, _nsx + _nsox, _nsy + _nsoy, _nscale * 1.15, _nscale * 1.15, 0, c_black, 0.7);
+            Draw.Sprite(_nspr, 0, _nsx + _nsox, _nsy + _nsoy, _nscale,        _nscale,        0, c_white,  1.0);
+        }
+    }
+
+    // 4. Custom Pins colocados pelo jogador
     for(var i = 0; i < array_length(_m.pins); i++)
     {
         if(_m.drag_active && _m.drag_pin_idx == i)
@@ -1207,9 +1201,7 @@ function TomTom_DrawMapOverlay(_m)
 
         var _p = _m.pins[i];
 
-        // Isola caverna de superfície: pin da caverna só aparece na caverna, e vice-versa
-        var _pin_reg = variable_struct_exists(_p, "region") ? _p.region : 0;
-        if(_has_p_reg && _pin_reg != _p_reg)
+        if(_has_p_reg && _p.region != _p_reg)
             continue;
 
         var _psx    = _left + _p.map_x * _scale;
@@ -1228,7 +1220,6 @@ function TomTom_DrawMapOverlay(_m)
             1.0
         );
 
-        // Exibe coordenadas (X, Y) abaixo do marcador (+50% de escala: 1.65)
         var _tx = round(_p.map_x);
         var _ty = round(_p.map_y);
         var _coord_str = string(_tx) + ", " + string(_ty);
@@ -1244,7 +1235,6 @@ function TomTom_DrawMapOverlay(_m)
         );
     }
 
-    // 2. Lixeira iluminada com aura
     var _trash     = TomTom_TrashGeometry();
     var _spr_trash = sprGUIIngameIconQuickTrash;
     var _tover     = point_in_rectangle(_mx, _my,
@@ -1256,7 +1246,6 @@ function TomTom_DrawMapOverlay(_m)
     Draw.Sprite(_spr_trash, 0, _trash.x, _trash.y, _tscale * 1.35, _tscale * 1.35, 0, c_white, _tover ? 0.85 : 0.45);
     Draw.Sprite(_spr_trash, 0, _trash.x, _trash.y, _tscale,         _tscale,         0, _tover ? c_red : c_white, 1.0);
 
-    // 3. Paleta com os botões de marcadores (📍 📦 ❓ 💀 🌀 ✅)
     var _palette_types = [0, 1, 2, 3, 4, 6];
     for(var b = 0; b < array_length(_palette_types); b++)
     {
@@ -1274,7 +1263,6 @@ function TomTom_DrawMapOverlay(_m)
                     _over ? 1.0 : 0.85);
     }
 
-    // 4. Pré-visualização ao arrastar (ícone sob o cursor do mouse)
     if(_m.drag_active && _m.drag_type >= 0)
     {
         var _drag_spr   = TomTom_PinSprite(_m.drag_type);
@@ -1282,10 +1270,6 @@ function TomTom_DrawMapOverlay(_m)
         Draw.Sprite(_drag_spr, 0, _mx, _my, _drag_scale, _drag_scale, 0, c_yellow, 0.9);
     }
 }
-
-// ---------------------------------------------------------------------------
-// PLAYER COORDS (canto inferior direito - estilo MapRadar / RealClock)
-// ---------------------------------------------------------------------------
 
 function TomTom_DrawPlayerCoords()
 {
@@ -1302,7 +1286,7 @@ function TomTom_DrawPlayerCoords()
         return;
 
     var _ratio = TomTom_ScaleRatio();
-    var _textScale = 3.0 * _ratio; // Padrão RealClock
+    var _textScale = 3.0 * _ratio;
 
     var _tile = TILE_SIZE;
     if(_tile <= 0) _tile = 16;
@@ -1325,11 +1309,6 @@ function TomTom_DrawPlayerCoords()
     );
 }
 
-// ---------------------------------------------------------------------------
-// UNIFIED SCREEN TARGET DRAW
-// (NPCs na tela: Oculta portrait, exibe apenas o nome centralizado embaixo)
-// ---------------------------------------------------------------------------
-
 function TomTom_DrawTarget(
     _x,
     _y,
@@ -1351,7 +1330,6 @@ function TomTom_DrawTarget(
     var _dy         = _y - _py;
     var _dist_tiles = point_distance(_px, _py, _x, _y) / _tile;
 
-    // Distância mínima para exibição
     if(_dist_tiles <= 1.0)
         return;
 
@@ -1359,14 +1337,13 @@ function TomTom_DrawTarget(
     var _sy = (_y - _cam_y) * _s;
     var _dist_str = string(round(_dist_tiles)) + "m";
 
-    // 1. Alvo está DENTRO da tela visível (On-Screen)
     if(_sx >= _margin && _sx <= _w - _margin && _sy >= _margin && _sy <= _h - _margin)
     {
-        if(_target_type == 0) // NPC na tela -> Oculta o portrait, desenha o nome elevado e centralizado sob os pés do NPC
+        if(_target_type == 0)
         {
             GUI.DrawText(_sx, _sy + 8 * _s, _name, 5, c_white, 1, _s * 0.55);
         }
-        else if(_target_type == 1) // Pin do Mapa -> mostra ícone do pin + metragem
+        else if(_target_type == 1)
         {
             var _sw1   = sprite_get_width(_sprite);
             var _sh1   = sprite_get_height(_sprite);
@@ -1377,11 +1354,11 @@ function TomTom_DrawTarget(
             Draw.Sprite(_sprite, 0, _sx + _sox1, _sy + _soy1, _iscl1, _iscl1, 0, c_white, 1);
             GUI.DrawText(_sx, _sy + 11 * _s, _dist_str, 5, c_yellow, 1, _s * 0.60);
         }
-        else if(_target_type == 2) // Baú -> centralizado perfeitamente embaixo do baú
+        else if(_target_type == 2)
         {
             GUI.DrawText(_sx + 8 * _s, _sy + 14 * _s, _dist_str, 5, c_yellow, 1, _s * 0.55);
         }
-        else if(_target_type == 3) // Mob -> centralizado embaixo do mob
+        else if(_target_type == 3)
         {
             var _m_lbl = (_name != "" && _name != "Monster" && _name != "Creature") ? (_name + " (" + _dist_str + ")") : _dist_str;
             GUI.DrawText(_sx, _sy + 12 * _s, _m_lbl, 5, c_white, 1, _s * 0.55);
@@ -1389,23 +1366,43 @@ function TomTom_DrawTarget(
         return;
     }
 
-    // 2. Alvo está FORA da tela -> Projeção na borda
-    var _dir   = point_direction(0, 0, _dx, _dy);
-    var _rad   = degtorad(_dir);
-    var _vx    = cos(_rad);
-    var _vy    = -sin(_rad);
-    var _hw    = _w * 0.5 - _margin;
-    var _hh    = _h * 0.5 - _margin;
-    var _scx   = abs(_vx) > 0.0001 ? _hw / abs(_vx) : 99999;
-    var _scy   = abs(_vy) > 0.0001 ? _hh / abs(_vy) : 99999;
-    var _min_s = min(_scx, _scy);
-    var _ex    = _w * 0.5 + _vx * _min_s;
-    var _ey    = _h * 0.5 + _vy * _min_s;
+    var _psx = (_px - _cam_x) * _s;
+    var _psy = (_py - _cam_y) * _s;
 
-    // Seta direcional projetada na margem externa
-    Draw.Sprite(sprGUIIngameArrowRight, 0, _ex + _vx * 18 * _s, _ey + _vy * 18 * _s, 0.80 * _s, 0.80 * _s, _dir, c_white, 1);
+    var _minX = _margin;
+    var _maxX = _w - _margin;
+    var _minY = _margin;
+    var _maxY = _h - _margin;
 
-    // Ícone representativo com centralização geométrica
+    var _startX = clamp(_psx, _minX, _maxX);
+    var _startY = clamp(_psy, _minY, _maxY);
+
+    var _dirX = _sx - _startX;
+    var _dirY = _sy - _startY;
+
+    if(abs(_dirX) < 0.001 && abs(_dirY) < 0.001)
+        return;
+
+    var _t = 1000000;
+    if(_dirX > 0.0001)       _t = min(_t, (_maxX - _startX) / _dirX);
+    else if(_dirX < -0.0001) _t = min(_t, (_minX - _startX) / _dirX);
+
+    if(_dirY > 0.0001)       _t = min(_t, (_maxY - _startY) / _dirY);
+    else if(_dirY < -0.0001) _t = min(_t, (_minY - _startY) / _dirY);
+
+    var _ex = _startX + _dirX * _t;
+    var _ey = _startY + _dirY * _t;
+
+    var _dir = point_direction(_startX, _startY, _sx, _sy);
+    var _rad = degtorad(_dir);
+    var _vx  = cos(_rad);
+    var _vy  = -sin(_rad);
+
+    Draw.Sprite(sprGUIIngameArrowRight, 0, _ex, _ey, 0.80 * _s, 0.80 * _s, _dir, c_white, 1);
+
+    var _iconX = _ex - _vx * 16 * _s;
+    var _iconY = _ey - _vy * 16 * _s;
+
     if(_sprite != -1 && _sprite >= 0 && sprite_exists(_sprite))
     {
         var _sw2   = sprite_get_width(_sprite);
@@ -1414,173 +1411,180 @@ function TomTom_DrawTarget(
         var _sox2  = (sprite_get_xoffset(_sprite) - _sw2 * 0.5) * _iscl2;
         var _soy2  = (sprite_get_yoffset(_sprite) - _sh2 * 0.5) * _iscl2;
 
-        Draw.Sprite(_sprite, 0, _ex + _sox2, _ey + _soy2, _iscl2, _iscl2, 0, c_white, 1);
+        Draw.Sprite(_sprite, 0, _iconX + _sox2, _iconY + _soy2, _iscl2, _iscl2, 0, c_white, 1);
     }
 
-    // Texto posicionado com separação confortável (+3px) abaixo do ícone
     if(_target_type == 2 || _target_type == 1)
     {
-        GUI.DrawText(_ex, _ey + 15 * _s, _dist_str, 5, c_yellow, 1, _s * 0.55);
+        GUI.DrawText(_iconX, _iconY + 14 * _s, _dist_str, 5, c_yellow, 1, _s * 0.55);
     }
     else
     {
         var _label = (_name != "" && _name != "Monster" && _name != "Creature") ? (_name + " (" + _dist_str + ")") : _dist_str;
-        GUI.DrawText(_ex, _ey + 15 * _s, _label, 5, c_white, 1, _s * 0.55);
+        GUI.DrawText(_iconX, _iconY + 14 * _s, _label, 5, c_white, 1, _s * 0.55);
     }
 }
 
-// ---------------------------------------------------------------------------
-// MINIMAP CAMERA CENTER (Compensa o travamento nas bordas do mapa)
-// ---------------------------------------------------------------------------
 
-function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX, _halfViewTilesY)
+function TomTom_GetMinimapView(_ratio)
 {
+    if(!is_struct(MINIMAP) || !variable_struct_exists(MINIMAP, "scale") || MINIMAP.scale <= 0)
+        return undefined;
+
+    var _gw = display_get_gui_width();
+    var _gh = display_get_gui_height();
+    var _tile = TILE_SIZE > 0 ? TILE_SIZE : 16;
+    var _scale = MINIMAP.scale;
+    var _frameW = max(sprite_get_width(sprGUIIngameMinimapContainer), _gw * 0.16);
+    var _frameH = max(sprite_get_height(sprGUIIngameMinimapContainer), _gh * 0.19);
+    var _frameX = _gw - _frameW - max(7, _gw * 0.008);
+    var _frameY = max(7, _gh * 0.015);
+    var _insetX = max(11, _frameW * 0.043);
+    var _left = _frameX + _insetX;
+    var _top = _frameY + max(13, _frameH * 0.074);
+    var _right = _frameX + _frameW - _insetX;
+    var _bottom = _frameY + _frameH - max(4, _frameH * 0.025);
+    var _centerX = (_left + _right) * 0.5;
+    var _centerY = (_top + _bottom) * 0.5;
+    var _playerX = MY_PLAYER.x / _tile;
+    var _playerY = MY_PLAYER.y / _tile;
+    var _halfX = (_right - _left) * 0.5 / _scale;
+    var _halfY = (_bottom - _top) * 0.5 / _scale;
     var _mapW = 0;
     var _mapH = 0;
+    var _surface = -1;
 
-    if(is_struct(MINIMAP))
+    // 1. API Oficial do ModExt: Region.GetCurrent() / GetWidth / GetHeight
+    try
     {
-        if(variable_struct_exists(MINIMAP, "surfaceWorld") && surface_exists(MINIMAP.surfaceWorld))
+        var _reg = Region.GetCurrent();
+        if(!is_undefined(_reg))
         {
-            _mapW = surface_get_width(MINIMAP.surfaceWorld);
-            _mapH = surface_get_height(MINIMAP.surfaceWorld);
+            var _rw = Region.GetWidth(_reg);
+            var _rh = Region.GetHeight(_reg);
+            if(is_numeric(_rw) && _rw > 0) _mapW = _rw;
+            if(is_numeric(_rh) && _rh > 0) _mapH = _rh;
         }
-        else if(variable_struct_exists(MINIMAP, "surface") && surface_exists(MINIMAP.surface))
+    }
+    catch(_e) {}
+
+    // 2. Struct WORLD
+    if(_mapW <= 0 || _mapH <= 0)
+    {
+        if(variable_global_exists("WORLD"))
         {
-            _mapW = surface_get_width(MINIMAP.surface);
-            _mapH = surface_get_height(MINIMAP.surface);
+            var _wstruct = global.WORLD;
+            if(is_struct(_wstruct))
+            {
+                if(variable_struct_exists(_wstruct, "width") && is_numeric(_wstruct.width) && _wstruct.width > 0)
+                    _mapW = _wstruct.width;
+                if(variable_struct_exists(_wstruct, "height") && is_numeric(_wstruct.height) && _wstruct.height > 0)
+                    _mapH = _wstruct.height;
+            }
         }
     }
 
     if(_mapW <= 0 || _mapH <= 0)
     {
-        if(variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
-            _mapW = variable_global_get("MAP_WIDTH");
-        if(variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
-            _mapH = variable_global_get("MAP_HEIGHT");
+        if(variable_struct_exists(MINIMAP, "surfaceWorld"))
+            _surface = MINIMAP.surfaceWorld;
+        else if(variable_struct_exists(MINIMAP, "surface"))
+            _surface = MINIMAP.surface;
+
+        if(surface_exists(_surface))
+        {
+            _mapW = surface_get_width(_surface);
+            _mapH = surface_get_height(_surface);
+        }
     }
 
-    if(_mapW > 0 && _mapH > 0)
+    if(_mapW <= 0 || _mapH <= 0)
     {
-        var _camX;
-        if(_mapW <= _halfViewTilesX * 2)
-            _camX = _mapW * 0.5;
-        else
-            _camX = clamp(_playerMapX, _halfViewTilesX, _mapW - _halfViewTilesX);
-
-        var _camY;
-        if(_mapH <= _halfViewTilesY * 2)
-            _camY = _mapH * 0.5;
-        else
-            _camY = clamp(_playerMapY, _halfViewTilesY, _mapH - _halfViewTilesY);
-
-        return {
-            x: _camX,
-            y: _camY
-        };
+        try
+        {
+            if(is_numeric(MAP_WIDTH)) _mapW = MAP_WIDTH;
+            if(is_numeric(MAP_HEIGHT)) _mapH = MAP_HEIGHT;
+        }
+        catch(_e) {}
     }
+
+    var _cameraX = _playerX;
+    var _cameraY = _playerY;
+
+    if(_mapW > 0)
+        _cameraX = _mapW <= _halfX * 2 ? _mapW * 0.5 : clamp(_playerX, _halfX, _mapW - _halfX);
+    if(_mapH > 0)
+        _cameraY = _mapH <= _halfY * 2 ? _mapH * 0.5 : clamp(_playerY, _halfY, _mapH - _halfY);
 
     return {
-        x: _playerMapX,
-        y: _playerMapY
+        left: _left,
+        top: _top,
+        right: _right,
+        bottom: _bottom,
+        center_x: _centerX,
+        center_y: _centerY,
+        camera_x: _cameraX,
+        camera_y: _cameraY,
+        player_x: _centerX + (_playerX - _cameraX) * _scale,
+        player_y: _centerY + (_playerY - _cameraY) * _scale,
+        scale: _scale,
+        tile: _tile,
+        icon_size: round(16 * _ratio)
     };
 }
 
-function TomTom_DrawMinimapTarget(_world_x, _world_y, _sprite, _color, _ratio, _only_edge)
+function TomTom_DrawMinimapTarget(_view, _world_x, _world_y, _sprite, _color, _only_edge)
 {
-    var _miniGw = display_get_gui_width();
-    var _miniGh = display_get_gui_height();
+    if(_sprite < 0 || !sprite_exists(_sprite)) return;
 
-    var _frameW = max(sprite_get_width(sprGUIIngameMinimapContainer), _miniGw * 0.16);
-    var _frameH = max(sprite_get_height(sprGUIIngameMinimapContainer), _miniGh * 0.19);
-    var _miniScale = is_struct(MINIMAP) && variable_struct_exists(MINIMAP, "scale") ? MINIMAP.scale : 1.0;
-    if(_miniScale <= 0) return;
+    var _targetX = _view.center_x + (_world_x / _view.tile - _view.camera_x) * _view.scale;
+    var _targetY = _view.center_y + (_world_y / _view.tile - _view.camera_y) * _view.scale;
+    var _iconHalf = _view.icon_size * 0.5;
+    var _drawX = _targetX;
+    var _drawY = _targetY;
+    var _drawSize = _view.icon_size;
+    var _shadowScale = 1.15;
+    var _shadowAlpha = 0.7;
 
-    var _frameRightMargin = max(7, _miniGw * 0.008);
-    var _frameLeft        = _miniGw - _frameW - _frameRightMargin;
-    var _frameTop         = max(7, _miniGh * 0.015);
-
-    var _innerInsetX      = max(11, _frameW * 0.043);
-    var _innerInsetTop    = max(13, _frameH * 0.074);
-    var _innerInsetBottom = max(4, _frameH * 0.025);
-
-    var _miniLeft   = _frameLeft + _innerInsetX;
-    var _miniTop    = _frameTop + _innerInsetTop;
-    var _miniRight  = _frameLeft + _frameW - _innerInsetX;
-    var _miniBottom = _frameTop + _frameH - _innerInsetBottom;
-
-    var _miniCenterX = (_miniLeft + _miniRight) * 0.5;
-    var _miniCenterY = (_miniTop + _miniBottom) * 0.5;
-
-    var _miniTile = TILE_SIZE > 0 ? TILE_SIZE : 16;
-    var _playerMapX = MY_PLAYER.x / _miniTile;
-    var _playerMapY = MY_PLAYER.y / _miniTile;
-
-    var _targetMapX = _world_x / _miniTile;
-    var _targetMapY = _world_y / _miniTile;
-
-    var _halfViewTilesX = ((_miniRight - _miniLeft) * 0.5) / _miniScale;
-    var _halfViewTilesY = ((_miniBottom - _miniTop) * 0.5) / _miniScale;
-
-    var _cam = TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX, _halfViewTilesY);
-
-    var _targetMiniX = _miniCenterX + (_targetMapX - _cam.x) * _miniScale;
-    var _targetMiniY = _miniCenterY + (_targetMapY - _cam.y) * _miniScale;
-
-    // Ícones no Minimapa ampliados para 16px (+2px)
-    var _iconSize = round(16 * _ratio);
-    var _iconHalf = _iconSize * 0.5;
-
-    // Se o alvo está dentro da tela do minimapa
-    if(_targetMiniX >= _miniLeft + _iconHalf && _targetMiniX <= _miniRight - _iconHalf
-    && _targetMiniY >= _miniTop  + _iconHalf && _targetMiniY <= _miniBottom - _iconHalf)
+    if(_targetX >= _view.left + _iconHalf && _targetX <= _view.right - _iconHalf
+    && _targetY >= _view.top  + _iconHalf && _targetY <= _view.bottom - _iconHalf)
     {
-        // Se for _only_edge (NPCs/Players que o jogo já renderiza dentro da viewport), não desenha duplicado
         if(_only_edge) return;
-
-        if(_sprite != -1 && _sprite >= 0 && sprite_exists(_sprite))
-        {
-            var _sw   = sprite_get_width(_sprite);
-            var _sh   = sprite_get_height(_sprite);
-            var _scale = _iconSize / max(_sw, _sh);
-            var _sox  = (sprite_get_xoffset(_sprite) - _sw * 0.5) * _scale;
-            var _soy  = (sprite_get_yoffset(_sprite) - _sh * 0.5) * _scale;
-
-            Draw.Sprite(_sprite, 0, _targetMiniX + _sox, _targetMiniY + _soy, _scale * 1.15, _scale * 1.15, 0, c_black, 0.7);
-            Draw.Sprite(_sprite, 0, _targetMiniX + _sox, _targetMiniY + _soy, _scale,        _scale,        0, _color,  1.0);
-        }
     }
     else
     {
-        // Se o alvo está fora do minimapa -> projeta na margem da moldura
-        var _dirX = _targetMiniX - _miniCenterX;
-        var _dirY = _targetMiniY - _miniCenterY;
+        var _startX = clamp(_view.player_x, _view.left + _iconHalf, _view.right - _iconHalf);
+        var _startY = clamp(_view.player_y, _view.top + _iconHalf, _view.bottom - _iconHalf);
+        var _dirX = _targetX - _view.player_x;
+        var _dirY = _targetY - _view.player_y;
 
         if(abs(_dirX) < 0.001 && abs(_dirY) < 0.001)
             return;
 
-        var _halfW = (_miniRight - _miniLeft) * 0.5 - _iconHalf;
-        var _halfH = (_miniBottom - _miniTop) * 0.5 - _iconHalf;
+        var _tx = 1000000;
+        var _ty = 1000000;
 
-        var _tx = (abs(_dirX) > 0.001) ? _halfW / abs(_dirX) : 1000000;
-        var _ty = (abs(_dirY) > 0.001) ? _halfH / abs(_dirY) : 1000000;
+        if(_dirX > 0.001) _tx = (_view.right - _iconHalf - _startX) / _dirX;
+        else if(_dirX < -0.001) _tx = (_view.left + _iconHalf - _startX) / _dirX;
+        if(_dirY > 0.001) _ty = (_view.bottom - _iconHalf - _startY) / _dirY;
+        else if(_dirY < -0.001) _ty = (_view.top + _iconHalf - _startY) / _dirY;
+
         var _edgeT = min(_tx, _ty);
-
-        var _edgeX = _miniCenterX + _dirX * _edgeT;
-        var _edgeY = _miniCenterY + _dirY * _edgeT;
-
-        if(_sprite != -1 && _sprite >= 0 && sprite_exists(_sprite))
-        {
-            var _sw2   = sprite_get_width(_sprite);
-            var _sh2   = sprite_get_height(_sprite);
-            var _scale = (_iconSize * 0.9) / max(_sw2, _sh2);
-            var _sox2  = (sprite_get_xoffset(_sprite) - _sw2 * 0.5) * _scale;
-            var _soy2  = (sprite_get_yoffset(_sprite) - _sh2 * 0.5) * _scale;
-
-            Draw.Sprite(_sprite, 0, _edgeX + _sox2, _edgeY + _soy2, _scale * 1.25, _scale * 1.25, 0, c_black, 0.85);
-            Draw.Sprite(_sprite, 0, _edgeX + _sox2, _edgeY + _soy2, _scale,        _scale,        0, _color,  1.0);
-        }
+        _drawX = _startX + _dirX * _edgeT;
+        _drawY = _startY + _dirY * _edgeT;
+        _drawSize *= 0.9;
+        _shadowScale = 1.25;
+        _shadowAlpha = 0.85;
     }
+
+    var _sw = sprite_get_width(_sprite);
+    var _sh = sprite_get_height(_sprite);
+    var _scale = _drawSize / max(_sw, _sh);
+    var _x = _drawX + (sprite_get_xoffset(_sprite) - _sw * 0.5) * _scale;
+    var _y = _drawY + (sprite_get_yoffset(_sprite) - _sh * 0.5) * _scale;
+
+    Draw.Sprite(_sprite, 0, _x, _y, _scale * _shadowScale, _scale * _shadowScale, 0, c_black, _shadowAlpha);
+    Draw.Sprite(_sprite, 0, _x, _y, _scale, _scale, 0, _color, 1.0);
 }
 
 function TomTom_DrawMinimapRadar(_m)
@@ -1588,12 +1592,12 @@ function TomTom_DrawMinimapRadar(_m)
     if(!instance_exists(objPlayer) || is_undefined(MY_PLAYER)) return;
     if(variable_instance_exists(MY_PLAYER, "hp") && MY_PLAYER.hp <= 0) return;
 
-    var _ratio = TomTom_ScaleRatio();
-    var _tile  = TILE_SIZE > 0 ? TILE_SIZE : 16;
+    var _view = TomTom_GetMinimapView(TomTom_ScaleRatio());
+    if(is_undefined(_view)) return;
+
     var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
     var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
 
-    // 1. NPCs & Players no Minimapa (só desenha na borda quando fora do minimapa!)
     if(_m.track_npcs)
     {
         for(var i = 0; i < array_length(_m.npcs); i++)
@@ -1607,7 +1611,7 @@ function TomTom_DrawMinimapRadar(_m)
                     continue;
             }
 
-            TomTom_DrawMinimapTarget(_n.x, _n.y, _n.sprite != -1 ? _n.sprite : sprGUIIngameIconPOI, c_white, _ratio, true);
+            TomTom_DrawMinimapTarget(_view, _n.x, _n.y, _n.sprite != -1 ? _n.sprite : sprGUIIngameIconPOI, c_white, true);
         }
 
         var _count = instance_number(objPlayer);
@@ -1623,26 +1627,23 @@ function TomTom_DrawMinimapRadar(_m)
                     continue;
             }
 
-            TomTom_DrawMinimapTarget(_player.x, _player.y, sprGUIIngameIconPOI, c_aqua, _ratio, true);
+            TomTom_DrawMinimapTarget(_view, _player.x, _player.y, sprGUIIngameIconPOI, c_aqua, true);
         }
     }
 
-    // 2. Pins & Baús no Minimapa
     if(_m.track_chests)
     {
         for(var i = 0; i < array_length(_m.pins); i++)
         {
             var _pin = _m.pins[i];
 
-            // Isola caverna de superfície: pin da caverna só aparece no minimapa da caverna
-            var _pin_reg = variable_struct_exists(_pin, "region") ? _pin.region : 0;
-            if(_has_p_reg && _pin_reg != _p_reg)
+            if(_has_p_reg && _pin.region != _p_reg)
                 continue;
 
-            var _world_x = _pin.map_x * _tile;
-            var _world_y = _pin.map_y * _tile;
+            var _world_x = _pin.map_x * _view.tile;
+            var _world_y = _pin.map_y * _view.tile;
 
-            TomTom_DrawMinimapTarget(_world_x, _world_y, TomTom_PinSprite(_pin.type), c_yellow, _ratio, false);
+            TomTom_DrawMinimapTarget(_view, _world_x, _world_y, TomTom_PinSprite(_pin.type), c_yellow, false);
         }
 
         for(var c = 0; c < array_length(_m.chests); c++)
@@ -1651,11 +1652,10 @@ function TomTom_DrawMinimapRadar(_m)
             if(!instance_exists(_chest.inst)) continue;
 
             var _cspr = (_chest.sprite != -1 && sprite_exists(_chest.sprite)) ? _chest.sprite : sprGUIIngameIconStorage;
-            TomTom_DrawMinimapTarget(_chest.x, _chest.y, _cspr, c_yellow, _ratio, false);
+            TomTom_DrawMinimapTarget(_view, _chest.x, _chest.y, _cspr, c_yellow, false);
         }
     }
 
-    // 3. Mobs no Minimapa (Ícones 16px com sprite representativo)
     if(_m.track_mobs)
     {
         var _def_gob = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
@@ -1665,14 +1665,10 @@ function TomTom_DrawMinimapRadar(_m)
             if(!instance_exists(_mob.inst)) continue;
 
             var _mspr = (_mob.sprite != -1 && sprite_exists(_mob.sprite)) ? _mob.sprite : _def_gob;
-            TomTom_DrawMinimapTarget(_mob.x, _mob.y, _mspr, c_white, _ratio, false);
+            TomTom_DrawMinimapTarget(_view, _mob.x, _mob.y, _mspr, c_white, false);
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// DRAW (Navegação em Jogo com Camadas Separadas para Mobs/Baús e NPCs)
-// ---------------------------------------------------------------------------
 
 function TomTom_Draw()
 {
@@ -1687,7 +1683,6 @@ function TomTom_Draw()
 
     TomTom_EnsureDefaults(_m);
 
-    // Desenha o botão Sonar e os 3 mini-badges no HUD
     TomTom_DrawButton(_m);
 
     var _w      = WINDOW.width;
@@ -1703,15 +1698,11 @@ function TomTom_Draw()
     var _has_p_reg = variable_instance_exists(MY_PLAYER, "netRegion");
     var _p_reg     = _has_p_reg ? variable_instance_get(MY_PLAYER, "netRegion") : undefined;
 
-    // =======================================================================
-    // MODO 1: RADAR NA TELA (TomTom Screen Edge Navigation)
-    // =======================================================================
     if(_m.radar_mode)
     {
-        var _margin_outer = 18 * _s; // Camada Externa (Mobs, Baús e Pins colados na borda da tela)
-        var _margin_inner = 48 * _s; // Camada Interna (NPCs e Jogadores afastados da borda)
+        var _margin_outer = 32 * _s;
+        var _margin_inner = 48 * _s;
 
-        // 1. Rastreio de NPCs (se ativo) -> Camada Interna (_margin_inner = 48)
         if(_m.track_npcs)
         {
             for(var i = 0; i < array_length(_m.npcs); i++)
@@ -1731,7 +1722,6 @@ function TomTom_Draw()
                 TomTom_DrawTarget(_n.x, _n.y, _n.name, _n.sprite, _w, _h, _s, _margin_inner, _px, _py, _cam_x, _cam_y, 0);
             }
 
-            // Jogadores Multiplayer -> Camada Interna
             var _count = instance_number(objPlayer);
             for(var i = 0; i < _count; i++)
             {
@@ -1749,20 +1739,15 @@ function TomTom_Draw()
             }
         }
 
-        // 2. Rastreio de Marcadores de Mapa & Baús (se ativo) -> Camada Externa (_margin_outer = 18)
         if(_m.track_chests)
         {
-            // Pins de Mapa (0=POI, 1=Storage, 2=Question, 3=Boss, 4=Death) -> Tipo 1
             for(var i = 0; i < array_length(_m.pins); i++)
             {
                 var _pin = _m.pins[i];
 
-                // Isola caverna de superfície: TomTom só aponta para pins na mesma dimensão/região
-                var _pin_reg = variable_struct_exists(_pin, "region") ? _pin.region : 0;
-                if(_has_p_reg && _pin_reg != _p_reg)
+                if(_has_p_reg && _pin.region != _p_reg)
                     continue;
 
-                // Locais já explorados/visitados (Tipo 6) não poluem o radar direcional da borda da tela
                 if(_pin.type == 6)
                     continue;
 
@@ -1772,7 +1757,6 @@ function TomTom_Draw()
                 TomTom_DrawTarget(_world_x, _world_y, "", TomTom_PinSprite(_pin.type), _w, _h, _s, _margin_outer, _px, _py, _cam_x, _cam_y, 1);
             }
 
-            // Baús do Mundo -> Tipo 2
             for(var c = 0; c < array_length(_m.chests); c++)
             {
                 var _chest = _m.chests[c];
@@ -1783,7 +1767,6 @@ function TomTom_Draw()
             }
         }
 
-        // 3. Rastreio de Mobs & Monstros (se ativo) -> Camada Externa (_margin_outer = 18)
         if(_m.track_mobs)
         {
             var _def_gob = TomTom_SafeSprite("sprGUIIngameIconBiomeGoblin", sprGUIIngameIconBoss);
@@ -1800,14 +1783,9 @@ function TomTom_Draw()
     }
 }
 
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// PERSISTENCE (tomtom_pins.cfg - Isolado por Ilha)
-// ---------------------------------------------------------------------------
-
 function TomTom_GetWorldStruct()
 {
-    // 1. Acesso direto ao globalvar nativo WORLD
+
     try
     {
         if(is_struct(WORLD))
@@ -1815,7 +1793,6 @@ function TomTom_GetWorldStruct()
     }
     catch(_e) {}
 
-    // 2. Fallback via global.WORLD
     try
     {
         if(variable_global_exists("WORLD"))
@@ -1836,7 +1813,7 @@ function TomTom_GetIslandKey()
 
     if(is_struct(_world))
     {
-        // 1. Nome canônico da ilha na matriz de navegação (ex: "RandomIsland2x0", "RandomIsland3x0", "RandomIsland4x4")
+
         if(variable_struct_exists(_world, "name"))
         {
             var _wname = string(_world.name);
@@ -1846,7 +1823,6 @@ function TomTom_GetIslandKey()
             }
         }
 
-        // 2. Se for ilha procedural/expedição:
         var _is_rnd = false;
         if(variable_struct_exists(_world, "isRandomIsland") && _world.isRandomIsland)
         {
@@ -1855,7 +1831,7 @@ function TomTom_GetIslandKey()
 
         if(_is_rnd)
         {
-            // islandID é o índice único da ilha nesta sessão / matriz de navegação
+
             if(variable_struct_exists(_world, "islandID"))
             {
                 var _isid = _world.islandID;
@@ -1865,7 +1841,6 @@ function TomTom_GetIslandKey()
                 }
             }
 
-            // seed é única por geração de terreno daquela ilha
             if(variable_struct_exists(_world, "seed"))
             {
                 var _seed = _world.seed;
@@ -1875,7 +1850,6 @@ function TomTom_GetIslandKey()
                 }
             }
 
-            // mapgenID como fallback adicional
             if(variable_struct_exists(_world, "mapgenID"))
             {
                 var _mgid = _world.mapgenID;
@@ -1887,7 +1861,6 @@ function TomTom_GetIslandKey()
         }
     }
 
-    // 3. Fallback caso objWorldController tenha a identificação
     if(instance_exists(objWorldController))
     {
         var _wc = instance_find(objWorldController, 0);
@@ -1925,7 +1898,6 @@ function TomTom_GetIslandKey()
         }
     }
 
-    // 3. Fallback se estiver marcado como ilha não-principal pelo lifecycle
     if(_m != undefined && variable_instance_exists(_m, "is_main_island") && !_m.is_main_island)
     {
         return "rnd_expedition";
@@ -1941,7 +1913,6 @@ function TomTom_SavePins(_m)
     var _current_island = TomTom_GetIslandKey();
     var _other_island_lines = [];
 
-    // Lê linhas de outras ilhas para preservá-las no arquivo
     var _filename = "tomtom_pins.cfg";
     if(file_exists(_filename))
     {
@@ -1954,7 +1925,6 @@ function TomTom_SavePins(_m)
                 file_text_readln(_rf);
                 if(string_length(_l) <= 0) continue;
 
-                // Ignora CFG antigo e linhas da ilha atual (serão reescritos)
                 if(string_pos("#CFG|", _l) == 1) continue;
 
                 var _p1 = string_pos("|", _l);
@@ -1967,14 +1937,11 @@ function TomTom_SavePins(_m)
                 {
                     var _rest_line = string_delete(_t2, 1, _p3);
                     var _p4 = string_pos("|", _rest_line);
-                    var _line_island = (_p4 > 1) ? string_copy(_rest_line, 1, _p4 - 1) : _rest_line;
-
-                    var _line_is_main = (_line_island == "island_0" || _line_island == "main" || _line_island == "island_main");
-                    var _curr_is_main = (_current_island == "island_0" || _current_island == "main" || _current_island == "island_main");
-
-                    if(_line_island != _current_island && !(_line_is_main && _curr_is_main))
+                    if(_p4 > 1)
                     {
-                        array_push(_other_island_lines, _l);
+                        var _line_island = string_copy(_rest_line, 1, _p4 - 1);
+                        if(_line_island != _current_island)
+                            array_push(_other_island_lines, _l);
                     }
                 }
             }
@@ -1985,7 +1952,6 @@ function TomTom_SavePins(_m)
     var _file = file_text_open_write(_filename);
     if(_file < 0) return;
 
-    // 1ª Linha: Configurações de estado (radar_mode, track_npcs, track_chests, track_mobs)
     file_text_write_string(_file,
         "#CFG|" +
         string(_m.radar_mode ? 1 : 0) + "|" +
@@ -1994,21 +1960,18 @@ function TomTom_SavePins(_m)
         string(_m.track_mobs ? 1 : 0));
     file_text_writeln(_file);
 
-    // Linhas dos marcadores da ilha atual: X|Y|TYPE|ISLAND_KEY|REGION
     for(var i = 0; i < array_length(_m.pins); i++)
     {
         var _p = _m.pins[i];
-        var _preg = variable_struct_exists(_p, "region") ? string(_p.region) : "0";
         file_text_write_string(_file,
             string(_p.map_x) + "|" +
             string(_p.map_y) + "|" +
             string(_p.type) + "|" +
             _current_island + "|" +
-            _preg);
+            string(_p.region));
         file_text_writeln(_file);
     }
 
-    // Linhas de marcadores de outras ilhas salvas
     for(var j = 0; j < array_length(_other_island_lines); j++)
     {
         file_text_write_string(_file, _other_island_lines[j]);
@@ -2027,13 +1990,8 @@ function TomTom_LoadPins(_m)
 
     var _current_island = TomTom_GetIslandKey();
 
-    var _filename = "";
-    if(file_exists("tomtom_pins.cfg"))
-        _filename = "tomtom_pins.cfg";
-    else if(file_exists("mapradar_pins.cfg"))
-        _filename = "mapradar_pins.cfg";
-
-    if(_filename == "") return;
+    var _filename = "tomtom_pins.cfg";
+    if(!file_exists(_filename)) return;
 
     var _file = file_text_open_read(_filename);
     if(_file < 0) return;
@@ -2044,7 +2002,6 @@ function TomTom_LoadPins(_m)
         file_text_readln(_file);
         if(string_length(_line) <= 0) continue;
 
-        // Linha de Configuração
         if(string_pos("#CFG|", _line) == 1)
         {
             var _cfg_data = string_delete(_line, 1, 5);
@@ -2074,7 +2031,6 @@ function TomTom_LoadPins(_m)
             continue;
         }
 
-        // Linha de Marcador: X|Y|TYPE ou X|Y|TYPE|ISLAND_KEY ou X|Y|TYPE|ISLAND_KEY|REGION
         var _p1 = string_pos("|", _line);
         if(_p1 <= 1) continue;
 
@@ -2088,18 +2044,18 @@ function TomTom_LoadPins(_m)
         var _py_str = string_copy(_t1,   1, _p2 - 1);
 
         var _p3 = string_pos("|", _t2);
-        var _pt_str = (_p3 > 1) ? string_copy(_t2, 1, _p3 - 1) : _t2;
-        var _rest   = (_p3 > 1) ? string_delete(_t2, 1, _p3) : "island_main";
+        if(_p3 <= 1) continue;
+
+        var _pt_str = string_copy(_t2, 1, _p3 - 1);
+        var _rest   = string_delete(_t2, 1, _p3);
 
         var _p4 = string_pos("|", _rest);
-        var _island_str = (_p4 > 1) ? string_copy(_rest, 1, _p4 - 1) : _rest;
-        var _region_str = (_p4 > 1) ? string_delete(_rest, 1, _p4) : "0";
+        if(_p4 <= 1) continue;
 
-        // Se o pin pertence a esta ilha (ou é legado sem tag ou tag 'main'/'island_0' e estamos na ilha principal)
-        var _is_main_pin = (_island_str == "island_0" || _island_str == "main" || _island_str == "island_main" || _p3 <= 1);
-        var _is_main_now = (_current_island == "island_0" || _current_island == "main" || _current_island == "island_main");
+        var _island_str = string_copy(_rest, 1, _p4 - 1);
+        var _region_str = string_delete(_rest, 1, _p4);
 
-        if(_island_str == _current_island || (_is_main_pin && _is_main_now))
+        if(_island_str == _current_island)
         {
             array_push(_m.pins, {
                 map_x:  real(_px_str),

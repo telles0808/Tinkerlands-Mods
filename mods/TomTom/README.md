@@ -1,102 +1,149 @@
-# 🧭 TomTom (v2.0) - Advanced GPS & Radar Navigation System
+# 🧭 TomTom — Unified GPS & Radar Navigation
 
 [![Author](https://img.shields.io/badge/Author-Telles0808-blue.svg)](https://github.com/telles0808)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
 [![Game](https://img.shields.io/badge/Game-Tinkerlands-orange.svg)]()
 
-**TomTom** is an advanced, high-performance navigation suite for **Tinkerlands**. It combines an interactive fullscreen map pin waypoint manager with an intelligent dual-layer off-screen radar tracking system for **NPCs**, **Monsters & Critters**, **World Chests**, **Multiplayer Companions**, and **Automatic Death Tombstones**.
+**TomTom** is the definitive, unified navigation and tracking system for **Tinkerlands**. It seamlessly unifies normal in-game HUD directional tracking (Radar), native minimap projection, and persistent waypoint management on the full expanded map.
+
+TomTom tracks **NPCs and multiplayer companions**, **world chests and user pins**, and **monsters, critters, and bosses**. Its controls remain accessible on the HUD with zero screen clutter.
 
 ---
 
-## 📸 Screenshots & Showcase
+## 📸 Screenshots
 
-| In-Game Dual-Layer Radar & NPC Names | Minimap Radar Mode | Fullscreen Map & Tombstone Pin |
+| Normal HUD Tracking | Minimap Presentation | Expanded Map and Pins |
 | :---: | :---: | :---: |
-| ![Dual-Layer Radar Tracking](screenshot_radar_tracking.png) | ![Minimap Radar Mode](screenshot_minimap_radar_mode.png) | ![Map Waypoints & Death Pin](screenshot_map_death_pin.png) |
-| *Off-screen entities tracked with distance meters; on-screen NPC names snug beneath feet.* | *Clean GPS mode with border entity projection and modular HUD category toggles.* | *Interactive map canvas with drag-and-drop pins, coordinate labels, and automatic death grave.* |
+| ![Normal HUD Tracking](screenshot_radar_tracking.png) | ![Minimap Presentation](screenshot_minimap_radar_mode.png) | ![Expanded Map and Pins](screenshot_map_death_pin.png) |
+| *Directional raycast tracking integrated directly into the normal HUD.* | *Tracked categories rendered natively inside the minimap with edge-clamping.* | *Top-left pin menu, persistent waypoints, and automatic death marker.* |
 
 ---
 
-## 🌟 Key Features
+## 🧭 One System, Dual Presentation Modes
 
-### 1. 🏹 Dual-Layer Off-Screen Radar (Anti-Overlap System)
-When multiple entities (such as NPCs and nearby monsters) are in the same direction, standard radar indicators draw over each other. TomTom solves this with **geometric dual-layer radial separation**:
-* **Outer Ring ($18\text{ px}$ from screen edge):** Reserved for **Monsters**, **Critters**, **Chests**, and **User Pins**.
-* **Inner Ring ($48\text{ px}$ from screen edge):** Reserved for **NPCs** and **Multiplayer Companions**.
-* **Directional Arrows & Meters:** Dynamic directional arrows with real-time distance in meters (`Xm`) and comfortable vertical spacing.
+TomTom maintains a single, unified tracking state and category filter set. The main Sonar button instantly switches where tracking is displayed:
 
-### 2. 🪦 Automatic Death Tombstone Pin
-* **Instant Death Detection:** Intercepts player death before respawning.
-* **Corpse Location Saved:** Automatically places a persistent Tombstone Pin on the exact tile where you died.
-* **Full GPS Tracking:** Directs you straight back to your items upon respawning.
-* **Map Trash Support:** Once you recover your loot, open the map (<kbd>M</kbd>) and drag the tombstone pin into the glowing red trash bin to delete it.
+- **Normal HUD (Radar Mode):** Targets are projected on-screen or clamped along the monitor boundaries with directional arrows, accurate raycasting, distances in meters, and entity icons.
+- **Minimap Mode:** Targets are rendered directly inside the native minimap viewport, properly scaling and clamping to the map frame when out of view.
 
-### 3. 👹 Entity & Mob Scanner
-* **Critter & Monster Identification:** Detects all active creatures in your current region.
-* **Real Representative Sprites:** Renders real creature portraits (e.g., Yellow, Purple, and Cyan Butterflies, Red & Blue Crabs, Rabbits, Slimes, Goblins, Bosses) instead of generic markers.
-* **Geometric Origin Centering:** Centers distance tags directly beneath every creature regardless of sprite dimensions.
+### Main Sonar Button
 
-### 4. 👥 Intelligent NPC Rendering
-* **Off-Screen:** Displays NPC character portraits and distance tags along the inner radar perimeter.
-* **On-Screen (Clean World Aesthetics):** When an NPC enters your visible screen, the mod automatically hides the HUD portrait and renders the NPC's name centered directly beneath their feet, leaving the world clean and immersive.
+Clicking the large Sonar icon switches between **Normal HUD** and **Minimap** presentation modes.
 
-### 5. 🗺️ Interactive Fullscreen Map & Pins
-* **5 Distinct Pin Categories:** Waypoint (📍), Storage (📦), Point of Interest (❓), Boss/Skull (💀), and Death Tombstone (🪦).
-* **Drag-and-Drop Workflow:** Drag markers from the top-left palette onto any map terrain.
-* **Live Tile Coordinates:** Displays real-time `(X, Y)` coordinate numbers beneath every pin on the map.
-* **Illuminated Trash Bin:** Drag any pin into the top-left animated trash can to remove it.
+### Category Filter Buttons
 
-### 6. 🔘 Sonar HUD Master Controller
-* **Enlarged Master Sonar Button ($56\text{ px}$):** Click the Sonar accessory icon below the minimap to switch between **Screen Edge Radar Mode** and **Minimap GPS Mode**.
-* **3 Independent Sub-Toggles:**
-  * 👤 **Guide Icon:** Toggle NPC / Player tracking.
-  * 📦 **Storage Icon:** Toggle Chest and Map Pin tracking.
-  * 👹 **Goblin Icon:** Toggle Monster and Critter tracking.
+The three badge buttons independently control tracked entity categories:
 
-### 7. 🧭 Zero-Clutter Minimap Border Projection
-* Suppresses redundant icons inside the minimap where the base game already renders NPC heads, projecting portraits onto the minimap border only when entities are outside the minimap viewport.
+| Button | Tracked Category |
+| :---: | --- |
+| 👤 | NPCs and multiplayer companions |
+| 📦 | World chests, storage containers, and custom map pins |
+| 👹 | Monsters, critters, and bosses |
+
+Filters are shared across both presentation modes and saved persistently.
 
 ---
 
-## 🕹️ Controls & Usage
+## 🖥️ Normal HUD Tracking (Collinear 2D Raycasting)
 
-| Action | Key / Interaction |
-| :--- | :--- |
-| **Open / Close Map** | Press <kbd>M</kbd> or click the map button below the minimap. |
-| **Close Map** | Press <kbd>ESC</kbd> or <kbd>M</kbd>. |
-| **Place New Pin** | Drag any marker from the top-left palette onto the map canvas. |
-| **Move Existing Pin** | Click and drag the pin to a new position on the map. |
-| **Delete Pin** | Drag any pin over the top-left trash can icon and release. |
-| **Toggle Radar Mode** | Click the large Sonar button below the minimap. |
-| **Toggle Categories** | Click any of the 3 sub-badges (NPC, Chest, Mob) next to the Sonar button. |
+When active on the normal game HUD:
+
+### Targets outside the visible screen
+- **2D Raycast Edge Clamping:** The indicator is placed at the exact intersection between the screen edge and the line of sight connecting the player character on-screen to the target in the world.
+- **Directional Arrow:** An arrow (`sprGUIIngameArrowRight`) rotates to point along the true line of sight toward the target.
+- **Category / Entity Icon:** Accurately identifies the chest, mob portrait, NPC portrait, or waypoint.
+- **Distance:** Meter reading (`Xm`) based on tile distance (`TILE_SIZE = 16`).
+- **Comfort Margins:** Icons and labels never clip into or overflow the monitor edges.
+
+### Targets inside the visible screen
+- Redundant icons are suppressed to avoid visual clutter.
+- NPCs display their resolved character names below the entity.
+- Monsters display their name and distance in meters.
+- Chests display their distance in meters.
+- Waypoint pins display their identifying sprite and distance.
+
+---
+
+## 🗺️ Minimap Tracking & Dimension Scaling
+
+When Minimap Mode is selected, tracked elements are rendered cleanly inside the game's minimap:
+
+- **Native Region Dimension Resolution:** Reads `Region.GetCurrent()` and queries `Region.GetWidth()` / `Region.GetHeight()` from the engine to calculate exact room and island boundaries.
+- **Perfect Border Locking:** When the player approaches the border of small islands, dungeons, or event caves, the minimap viewport locks to the terrain boundary while pins remain physically fixed to ground tiles.
+- **Edge Clamping:** Out-of-view targets clamp to the minimap frame, showing their respective category icons.
+- **Multiplayer & Dimension Isolation:** Fully isolates `netRegion` so markers from caves, dungeons, or other islands never bleed into the current map.
+
+---
+
+## 🌍 Expanded Map Overlay & Pin Editor
+
+Opening the full map (<kbd>M</kbd>) displays the interactive pin palette and overlay:
+
+- **Full World Entity Rendering:** All active sonar filters (chests, mobs, NPCs, and custom pins) are drawn directly on the full map in real time.
+- **Pin Palette:** Drag and drop pins from the upper-left palette onto any map coordinate.
+- **Coordinate Readouts:** Each pin displays its exact tile coordinates (`X, Y`).
+- **Pin Movement & Deletion:** Drag existing pins to reposition, or drag them into the trash icon to delete.
+- **Persistent Storage:** Saves pins per island key and network region in `tomtom_pins.cfg`.
+
+### Placeable Pins
+
+| Type | Purpose | Normal HUD | Minimap | Expanded Map |
+| --- | --- | :---: | :---: | :---: |
+| Waypoint | General destination | ✅ | ✅ | ✅ |
+| Storage | Chest or resource cache | ✅ | ✅ | ✅ |
+| Question | Unexplored point of interest | ✅ | ✅ | ✅ |
+| Boss | Boss or high-threat encounter | ✅ | ✅ | ✅ |
+| Teleport | Portal or teleport station | ✅ | ✅ | ✅ |
+| Completed | Cleared or completed location | ❌ | ✅ | ✅ |
+
+---
+
+## ✅ Special Completed Pin
+
+The green completed/check pin marks cleared points of interest:
+- Selectable and placeable from the expanded map palette.
+- Appears on the expanded map and minimap.
+- Deliberately omitted from normal HUD tracking to keep HUD navigation uncluttered.
+
+---
+
+## 🪦 Automatic Death Waypoint
+
+When the player dies, a tombstone pin (`sprTombStone`) is automatically recorded at the exact death tile and region. It persists after respawning and can be removed via the expanded map trash bin.
+
+---
+
+## 👥 Multiplayer Companion Tracking
+
+- Automatically detects and tracks other active `objPlayer` instances in the same `netRegion`.
+- Displays companion names and distances.
+- Players entering caves or other dimensions disappear seamlessly until you enter the same region.
+
+---
+
+## 🕹️ Controls Summary
+
+| Action | Key or Interaction |
+| --- | --- |
+| Switch HUD / Minimap Mode | Click large Sonar button |
+| Toggle Tracked Categories | Click 👤 (NPCs), 📦 (Chests/Pins), or 👹 (Mobs) |
+| Open / Close Expanded Map | Press <kbd>M</kbd> or click the map icon |
+| Place Custom Pin | Drag pin from upper-left palette onto map |
+| Move Existing Pin | Click and drag pin to new location |
+| Delete Pin | Drag pin into upper-left trash icon |
+
+---
+
+## 💾 Persistence
+
+TomTom persists its entire configuration (Sonar mode, active filters, and custom pins per island/region) in `tomtom_pins.cfg`.
 
 ---
 
 ## 📥 Installation
 
-1. Download [`telles0808_id5004_tomtom.mod`](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5004_tomtom.mod).
-2. Locate your **Tinkerlands** installation folder:
-   ```
-   C:\Program Files (x86)\Steam\steamapps\common\Tinkerlands\mods\
-   ```
-3. **⚠️ (Recommended) Remove Old Versions:** Delete any older versions of `telles0808_id5004_tomtom.mod`, `TomTom.mod`, or legacy radar files from your `mods\` folder.
-4. Place `telles0808_id5004_tomtom.mod` inside your `mods\` folder.
-5. **💡 Clear Game Cache:** Delete all cached files inside `%LOCALAPPDATA%\Tinkerlands\temp`.
-6. Launch Tinkerlands!
-
----
-
-## 📜 Changelog (v2.0)
-
-* **v2.0:**
-  * **Dual-Layer Radar:** Implemented separated outer ($18\text{ px}$) and inner ($48\text{ px}$) margins to eliminate icon overlap.
-  * **Death Pin System:** Added automatic death detection and persistent tombstone waypoint creation.
-  * **Mob & Critter Tracking Engine:** Rebuilt scanner with creature identification and real representative sprites.
-  * **Geometric Centering:** Calibrated sprite origin offsets for accurate distance text alignment.
-  * **On-Screen Clean NPCs:** Automatically hides portraits on-screen and elevates name text snug beneath feet.
-  * **Sub-Badge HUD Controller:** Added 3 modular toggles beside the enlarged $56\text{ px}$ Sonar button.
-  * **Minimap Clutter Elimination:** Suppressed duplicate internal minimap blips for entities natively drawn by the base game.
-* **v1.4:**
-  * Initial interactive fullscreen map with drag-and-drop pins and illuminated trash bin.
-  * Unified off-screen vector projection engine for NPCs and waypoints.
+1. Download `telles0808_id5004_tomtom.mod` from releases.
+2. Place the `.mod` file in your Tinkerlands `mods/` directory.
+3. Remove any obsolete radar or older map mod files.
+4. Launch Tinkerlands.
