@@ -349,19 +349,27 @@ function BO_GetOpenNearbyChestContainer(_bo)
 }
 
 
+function BO_ScaleRatio()
+{
+    var _height = display_get_gui_height();
+
+    return (_height > 0)
+        ? (_height / 1080.0)
+        : 1.0;
+}
+
+
 function BO_FilterButtonGeometry(_index)
 {
-    var _scale_x = display_get_gui_width() / 1920.0;
-    var _scale_y = display_get_gui_height() / 1080.0;
-    var _scale = min(_scale_x, _scale_y);
-    var _left = 127 * _scale_x;
-    var _spacing = 34 * _scale_x;
+    var _ratio = BO_ScaleRatio();
+    var _left = 127 * _ratio;
+    var _spacing = 34 * _ratio;
 
     return {
-        x: _left + (17 + _index * 34) * _scale_x,
-        bottom: 587 * _scale_y,
-        hit_size: 40 * _scale,
-        visual_size: 30 * _scale,
+        x: _left + (17 + _index * 34) * _ratio,
+        bottom: 587 * _ratio,
+        hit_size: 40 * _ratio,
+        visual_size: 30 * _ratio,
         spacing: _spacing
     };
 }
@@ -477,15 +485,14 @@ function BO_HoveredFilterIndex()
 {
     var _mx = device_mouse_x_to_gui(0);
     var _my = device_mouse_y_to_gui(0);
-    var _scale_y = display_get_gui_height() / 1080.0;
-    var _scale = (_scale_y > 0) ? _scale_y : 1.0;
+    var _ratio = BO_ScaleRatio();
 
     for(var i = 0; i < 7; i++)
     {
         var _button = BO_FilterButtonGeometry(i);
-        var _half_w = max(18 * _scale, _button.hit_size * 0.5);
-        var _y_top = _button.bottom - 46 * _scale;
-        var _y_bottom = _button.bottom + 8 * _scale;
+        var _half_w = max(18 * _ratio, _button.hit_size * 0.5);
+        var _y_top = _button.bottom - 46 * _ratio;
+        var _y_bottom = _button.bottom + 8 * _ratio;
 
         if(
             _mx >= _button.x - _half_w
