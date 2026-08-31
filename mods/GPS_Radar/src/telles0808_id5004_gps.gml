@@ -1,4 +1,4 @@
-/*
+﻿/*
     ========================================================================
     TINKERLANDS - GPS Radar
     Author: Telles0808
@@ -1997,7 +1997,8 @@ function GPS_SavePins(_m)
         string(_m.radar_mode ? 1 : 0) + "|" +
         string(_m.track_npcs ? 1 : 0) + "|" +
         string(_m.track_chests ? 1 : 0) + "|" +
-        string(_m.track_mobs ? 1 : 0));
+        string(_m.track_mobs ? 1 : 0) + "|" +
+        string(_m.auto_death_pin ? 1 : 0));
     file_text_writeln(_file);
 
     for(var i = 0; i < array_length(_m.pins); i++)
