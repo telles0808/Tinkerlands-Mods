@@ -1435,29 +1435,28 @@ function TomTom_DrawTarget(
 
 function TomTom_GetMinimapCameraCenter(_playerMapX, _playerMapY, _halfViewTilesX, _halfViewTilesY)
 {
-    var _tile = (TILE_SIZE > 0) ? TILE_SIZE : 16;
-    var _mapW = (room_width > 0) ? (room_width / _tile) : 0;
-    var _mapH = (room_height > 0) ? (room_height / _tile) : 0;
+    var _mapW = 0;
+    var _mapH = 0;
+
+    if(is_struct(MINIMAP))
+    {
+        if(variable_struct_exists(MINIMAP, "surfaceWorld") && surface_exists(MINIMAP.surfaceWorld))
+        {
+            _mapW = surface_get_width(MINIMAP.surfaceWorld);
+            _mapH = surface_get_height(MINIMAP.surfaceWorld);
+        }
+        else if(variable_struct_exists(MINIMAP, "surface") && surface_exists(MINIMAP.surface))
+        {
+            _mapW = surface_get_width(MINIMAP.surface);
+            _mapH = surface_get_height(MINIMAP.surface);
+        }
+    }
 
     if(_mapW <= 0 || _mapH <= 0)
     {
-        if(is_struct(MINIMAP))
-        {
-            if(variable_struct_exists(MINIMAP, "surfaceWorld") && surface_exists(MINIMAP.surfaceWorld))
-            {
-                _mapW = surface_get_width(MINIMAP.surfaceWorld);
-                _mapH = surface_get_height(MINIMAP.surfaceWorld);
-            }
-            else if(variable_struct_exists(MINIMAP, "surface") && surface_exists(MINIMAP.surface))
-            {
-                _mapW = surface_get_width(MINIMAP.surface);
-                _mapH = surface_get_height(MINIMAP.surface);
-            }
-        }
-
-        if(_mapW <= 0 && variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
+        if(variable_global_exists("MAP_WIDTH") && is_numeric(variable_global_get("MAP_WIDTH")))
             _mapW = variable_global_get("MAP_WIDTH");
-        if(_mapH <= 0 && variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
+        if(variable_global_exists("MAP_HEIGHT") && is_numeric(variable_global_get("MAP_HEIGHT")))
             _mapH = variable_global_get("MAP_HEIGHT");
     }
 
