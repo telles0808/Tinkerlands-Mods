@@ -15,6 +15,7 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 | **[Better Organizer](#-better-organizer-id-5003)** | `5003` | Chest automation & organization: 7-category filter bar with hotbar protection and persistent routing. | ✅ Stable | [⬇️ Download BO.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5003_bo.mod) |
 | **[GPS Radar](#-gps-radar-id-5004)** | `5004` | Advanced GPS waypoint manager with interactive map pins, 2D raycast directional tracking, minimap scaling, and automatic death tombstone pins. | ✅ Stable | [⬇️ Download GPS_Radar.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5004_gps.mod) |
 | **[Monitor Switcher](#-monitor-switcher-id-5005)** | `5005` | 1-click multi-monitor display switcher on the title screen for Borderless Fullscreen mode. | ✅ Stable | [⬇️ Download Monitor.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5005_monitor.mod) |
+| **[Godmod](#-godmod-id-5006)** | `5006` | Toggleable God Mode: infinite HP, MP, and Dashes locked to true dynamic maximums with complete damage immunity. | ✅ Stable | [⬇️ Download Godmod.mod](https://github.com/telles0808/Tinkerlands-Mods/raw/main/releases/telles0808_id5006_godmod.mod) |
 
 ---
 
@@ -99,6 +100,17 @@ All pre-compiled and ready-to-play `.mod` files are available in the table below
 
 ---
 
+### ⚡ Godmod (ID: 5006)
+* **1-Key Toggle (<kbd>F9</kbd>):** Instantly toggle God Mode ON or OFF during gameplay.
+* **Dynamic Max HP & MP:** Dynamically locks health and mana to your character's true maximum including all equipment bonuses and permanent upgrades (`calculate_max_hp`, `calculate_max_mp`).
+* **Infinite Dashes & SP:** Never run out of energy; stamina and dashes are locked full with zero cooldown delay.
+* **Complete Damage Immunity:** Provides total immunity to all incoming damage, hits, and environmental hazards.
+* **Adaptive Centered HUD:** Displays a neat, resolution-scaled indicator at the top center of the screen when active.
+
+* **Documentation & Source:** [mods/Godmod/README.md](mods/Godmod/README.md) • [mods/Godmod/src/telles0808_id5006_godmod.gml](mods/Godmod/src/telles0808_id5006_godmod.gml)
+
+---
+
 ## 📖 Technical Documentation
 For developers and modders looking to understand Tinkerlands' engine variables, lifecycle hooks, and NPC architecture:
 * 📄 **[Tinkerlands Modding & Engine Reference Guide](MODDING_GUIDE.md):** Detailed guide on GML mod packaging, global variables, lifecycle events, $O(1)$ `npcID` resolution, container hooks, and minimap rendering.
@@ -116,6 +128,7 @@ Each mod folder includes a 1-click Windows Command Script (`.cmd`) to compile, p
 | **Better Organizer** | [`mods/BO/src/telles0808_id5003_bo.cmd`](mods/BO/src/telles0808_id5003_bo.cmd) |
 | **GPS Radar** | [`mods/GPS_Radar/src/telles0808_id5004_gps.cmd`](mods/GPS_Radar/src/telles0808_id5004_gps.cmd) |
 | **Monitor Switcher** | [`mods/Monitor/src/telles0808_id5005_monitor.cmd`](mods/Monitor/src/telles0808_id5005_monitor.cmd) |
+| **Godmod** | [`mods/Godmod/src/telles0808_id5006_godmod.cmd`](mods/Godmod/src/telles0808_id5006_godmod.cmd) |
 
 ---
 
