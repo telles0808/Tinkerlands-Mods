@@ -436,3 +436,17 @@ function Window_MoveToMonitor(_target_x, _width, _height)
 > [!IMPORTANT]
 > **Do NOT call `window_set_fullscreen(true)` after repositioning!**  
 > A window with `window_set_showborder(false)` spanning `(target_x, 0)` at `1920x1080` **is** the native Borderless Fullscreen on that monitor. Re-enabling the fullscreen flag causes Direct3D to jump back to Display 1.
+
+---
+
+## 9. 🧬 Player Stats, Upgrades & Database Architecture (`db_upgrade`, `db_cube`)
+
+### Permanent Stat Upgrades Architecture
+In recent engine updates, permanent player stat upgrades (such as maximum HP, Mana/MP, and maximum capacity limits) have been decoupled from legacy configuration variables (`conf.player.*`) and migrated into dedicated internal database tables:
+* **`db_upgrade`**: Defines the progression tree, tier bonuses, and hard maximum limit caps for permanent character upgrades.
+* **`db_cube`**: Manages socketable cube upgrades, stat enhancements, and modifiers.
+
+### Modding Implications
+1. **Direct Config Overrides are Obsolete:** Attempting to mutate legacy `conf.player.variable` fields will no longer persist or affect recalculated maximums.
+2. **Runtime Health/Mana Recalculation:** The engine recalculates maximum player stats dynamically using dedicated functions (such as `calculate_max_hp(objPlayer)`).
+3. **Database Tooling (`dbtool` / `modtool`):** Official database tools expose `db_upgrade` and `db_cube` tabs to modify baseline upgrade tables and stat limits cleanly.
