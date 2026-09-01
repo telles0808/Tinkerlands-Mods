@@ -450,3 +450,24 @@ In recent engine updates, permanent player stat upgrades (such as maximum HP, Ma
 1. **Direct Config Overrides are Obsolete:** Attempting to mutate legacy `conf.player.variable` fields will no longer persist or affect recalculated maximums.
 2. **Runtime Health/Mana Recalculation:** The engine recalculates maximum player stats dynamically using dedicated functions (such as `calculate_max_hp(objPlayer)`).
 3. **Database Tooling (`dbtool` / `modtool`):** Official database tools expose `db_upgrade` and `db_cube` tabs to modify baseline upgrade tables and stat limits cleanly.
+
+---
+
+## 10. 🎭 Modded Content Namespacing & Reference Codes (`Copy Reference Code`)
+
+### Modded vs Native Enum References
+* **Native Content:** Standard base-game constants are accessed directly via global engine enums (e.g., `E_BUFFS.alt_state_stunned`, `E_ITEM_DATA.favorite`).
+* **Custom Modded Content:** Custom buffs, items, and database entries created in mod packages **cannot** be referenced through native enums. Instead, they use namespaced string identifiers.
+
+### Namespaced String ID Pattern
+Modded entries follow the format: `"<PackageOrModName>@<entry_id>"` or `"<ModID>_<PackageName>@<entry_id>"`:
+```gml
+// Applying a custom buff created in a mod package:
+entity_buff_add("Grasslands_Update@banner_orc_shaman", 1);
+```
+
+### Retrieving Reference Codes
+In the official **modtool / dbtool** interface:
+1. Right-click any custom entry (buff, item, entity).
+2. Select **`Copy Reference Code`**.
+3. Paste the resulting namespaced string directly into your GML scripts and functions (e.g., `entity_buff_add`, `container_item_create`, etc.).
