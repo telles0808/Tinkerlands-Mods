@@ -219,6 +219,29 @@ with (objGUIIngameController) {
 Input.DisableMenuInputs(0.1);
 ```
 
+### Native Text Input Modal (`create_text_input`)
+Tinkerlands provides a built-in UI modal for user text input (e.g. naming waypoints, searching items, trainer commands):
+
+* **Signature:** `create_text_input(defaultText, callback, callbackData)`
+* **Callback Argument:** The callback function receives a single `_data` struct containing `_data.text` (the entered string) along with all properties passed in the `callbackData` struct.
+
+```gml
+// Basic usage:
+create_text_input("", function(_data)
+{
+    show_debug_message(_data.text);
+});
+
+// Usage with context payload:
+var _payload = { pinIndex: 2, category: "Waypoint" };
+create_text_input("My Marker", function(_data)
+{
+    var _enteredText = _data.text;
+    var _pinIndex    = _data.pinIndex;
+    show_debug_message("Renamed pin " + string(_pinIndex) + " to: " + _enteredText);
+}, _payload);
+```
+
 ---
 
 ## 5. 🗺️ Minimap & Mapping Architecture (GPS Radar)
